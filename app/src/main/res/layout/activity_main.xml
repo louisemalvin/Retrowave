@@ -6,31 +6,95 @@
     android:layout_height="match_parent"
     tools:context="">
 
+
     <com.paradoxcat.waveformtest.view.WaveformSlideBar
         android:id="@+id/waveformView"
         android:layout_width="match_parent"
-        android:layout_height="500dp"
-        android:background="@android:color/darker_gray"
-        app:layout_constraintBottom_toTopOf="@id/controlsContainer"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="300dp"
+        android:layout_marginBottom="316dp"
+        android:background="@drawable/wave_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:layout_editor_absoluteX="0dp" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:paddingHorizontal="10dp"
+        android:layout_height="80dp"
+        android:background="@drawable/title_background"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/waveformView"
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/controlsContainer"
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="4dp"
+            android:text="TITLE:"
+            android:textColor="@color/black"
+            android:background="@color/white"
+            app:layout_constraintBottom_toTopOf="@+id/waveformView"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="1.0"
+            tools:layout_editor_absoluteX="0dp" />
+
+        <TextView
+            android:id="@+id/fileName"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:textAlignment="center"
+            android:layout_marginTop="4dp"
+            android:text="music_mono_44100Hz_16bit.wav"
+            android:textColor="@color/black"
+            android:background="@color/white"
+            app:layout_constraintBottom_toTopOf="@+id/waveformView"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="1.0"
+            tools:layout_editor_absoluteX="0dp" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/timeStamp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="03:14 / 10:00"
+        app:layout_constraintBottom_toTopOf="@+id/linearButtonLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/waveformView" />
+
+    <LinearLayout
+        android:id="@+id/linearButtonLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:layout_marginTop="3dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/waveformView">
 
-        <Button
-            android:id="@+id/playButton"
-            android:layout_width="wrap_content"
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/loadFile"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="64dp"
-            android:text="Play/Pause"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent" />
+            android:layout_marginEnd="2dp"
+            android:layout_weight="1"
+            android:background="@drawable/load_button_background"
+            android:paddingHorizontal="10dp"
+            android:text="LOAD FILE"
+            android:textColor="@color/white" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/playButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:layout_weight="1"
+            android:background="@drawable/play_button_background"
+            android:text="Play/Pause"
+            android:textColor="@color/black" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

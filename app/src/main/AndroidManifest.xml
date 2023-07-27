@@ -14,6 +14,7 @@
         android:theme="@style/Theme.ParadoxWaveViewer">
         <activity
             android:name="com.paradoxcat.waveformtest.MainActivity"
+            android:theme="@style/Theme.ParadoxWaveViewer"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
