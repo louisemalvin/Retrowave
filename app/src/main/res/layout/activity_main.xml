@@ -12,43 +12,53 @@
         android:layout_width="match_parent"
         android:layout_height="300dp"
         android:layout_marginBottom="316dp"
-        android:background="@drawable/wave_background"
+        android:background="@drawable/bg_waveform"
         app:layout_constraintBottom_toBottomOf="parent"
         tools:layout_editor_absoluteX="0dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:paddingHorizontal="10dp"
-        android:layout_height="80dp"
-        android:background="@drawable/title_background"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_title"
         android:orientation="vertical"
+        android:paddingHorizontal="10dp"
         app:layout_constraintBottom_toTopOf="@+id/waveformView"
         app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
             android:id="@+id/title"
             android:layout_width="match_parent"
-            android:layout_height="36dp"
-            android:layout_marginTop="4dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:background="@color/white"
+            android:fontFamily="@font/hammersmith_one"
             android:text="TITLE:"
             android:textColor="@color/black"
-            android:background="@color/white"
-            app:layout_constraintBottom_toTopOf="@+id/waveformView"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toTopOf="@+id/lineSeparator"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="1.0"
             tools:layout_editor_absoluteX="0dp" />
+
+        <View
+            android:id="@+id/lineSeparator"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/black" />
 
         <TextView
             android:id="@+id/fileName"
             android:layout_width="match_parent"
             android:layout_height="36dp"
-            android:textAlignment="center"
             android:layout_marginTop="4dp"
-            android:text="music_mono_44100Hz_16bit.wav"
-            android:textColor="@color/black"
             android:background="@color/white"
+            android:fontFamily="@font/indie_flower"
+            android:text="music_mono_44100Hz_16bit.wav"
+            android:textAlignment="center"
+            android:textColor="@color/black"
+            android:textSize="25sp"
             app:layout_constraintBottom_toTopOf="@+id/waveformView"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lineSeparator"
             app:layout_constraintVertical_bias="1.0"
             tools:layout_editor_absoluteX="0dp" />
 
@@ -58,8 +68,11 @@
         android:id="@+id/timeStamp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/aubrey"
         android:text="03:14 / 10:00"
-        app:layout_constraintBottom_toTopOf="@+id/linearButtonLayout"
+        android:textSize="20sp"
+        android:textColor="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/waveformView" />
@@ -80,7 +93,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="2dp"
             android:layout_weight="1"
-            android:background="@drawable/load_button_background"
+            android:background="@drawable/bg_load_button"
             android:paddingHorizontal="10dp"
             android:text="LOAD FILE"
             android:textColor="@color/white" />
@@ -91,7 +104,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="2dp"
             android:layout_weight="1"
-            android:background="@drawable/play_button_background"
+            android:background="@drawable/bg_play_button"
             android:text="Play/Pause"
             android:textColor="@color/black" />
 
