@@ -10,8 +10,16 @@
 - [Credits](#credits)
 
 ## UI
-The UI design is mostly inspired by google recorder app and old-cassete player. I used Figma to do a quick sketch of the app. 
-![Design concept](design_concept.png)
+The UI design is mostly inspired by google recorder app and some old-cassete tape player. I used Figma to do a quick sketch of the app. 
+
+        Header concept:
+
+![Header concept](header_concept.png)
+
+        Design concept:
+
+![Design concept](design_concept.png) 
+
 
 ## Waveform
 The basic implementation of the waveform analyzer draws points as circles on an interval and it draws line that connects them to one another. 
