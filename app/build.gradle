@@ -34,6 +34,12 @@ android {
     }
 }
 
+ext {
+    lifecycle_version = "2.6.1"
+    activity_version = "1.7.2"
+    fragment_version = "1.5.7"
+}
+
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.9.0'
@@ -43,6 +49,10 @@ dependencies {
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
 
+    // ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
+    implementation("androidx.activity:activity-ktx:$activity_version")
+    implementation("androidx.fragment:fragment-ktx:$fragment_version")
 
     // hmmmmmmmmmmmmmmm, what are these for????
     testImplementation 'junit:junit:4.13.2'
