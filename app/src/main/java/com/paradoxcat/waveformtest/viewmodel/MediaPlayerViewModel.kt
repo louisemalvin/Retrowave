@@ -72,6 +72,7 @@ class MediaPlayerViewModel : ViewModel() {
                 updateTimestamp()
                 delay(REFRESH_RATE)
             }
+            updateTimestamp()
         }
     }
 
