@@ -24,16 +24,6 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
         const val DEFAULT_STEP_COUNT = 40000
         private val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
         val INV_MAX_VALUE = 1.0f / MAX_VALUE // multiply with this to get % of max value
-
-        /** Transform raw audio into drawable array of integers */
-        fun transformRawData(buffer: ByteBuffer): IntArray {
-            val nSamples = buffer.limit() / 2 // assuming 16-bit PCM mono
-            val waveForm = IntArray(nSamples)
-            for (i in 1 until buffer.limit() step 2) {
-                waveForm[i / 2] = (buffer[i].toInt() shl 8) or buffer[i - 1].toInt()
-            }
-            return waveForm
-        }
     }
 
     private val linePaint = Paint()
@@ -55,7 +45,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
             val canvasWidth = width - LEFT_RIGHT_PADDING * 2 // width of the canvas minus paddings
             val maxAmplitude = height / 2.0f - TOP_BOTTOM_PADDING // max amount of px from middle to the edge minus pad
             val amplitudeScaleFactor = INV_MAX_VALUE * maxAmplitude // multiply by this to get number of px from middle
-            
+
             // initialize y with the first sample value
             var y = height / 2.0f - waveForm[0] * amplitudeScaleFactor
             var stepIndex = 0
@@ -85,8 +75,8 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
      * @param buffer -- raw audio buffer must be 16-bit samples packed together (mono, 16-bit PCM). Sample rate does
      *                  not matter, since we are not rendering any time-related information yet.
      */
-    fun setData(buffer: ByteBuffer) {
-        waveForm = transformRawData(buffer)
+    fun setData(intArray: IntArray) {
+        waveForm = intArray
         invalidate()
     }
 }
