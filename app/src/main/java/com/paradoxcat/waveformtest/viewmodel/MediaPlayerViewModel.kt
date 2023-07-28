@@ -1,7 +1,6 @@
 package com.paradoxcat.waveformtest.viewmodel
 
 import android.content.res.AssetFileDescriptor
-import android.media.AudioFormat
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaPlayer
@@ -9,25 +8,26 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.paradoxcat.waveformtest.MainActivity
-import com.paradoxcat.waveformtest.MainActivity.Companion.EXAMPLE_AUDIO_FILE_NAME
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
 
 class MediaPlayerViewModel : ViewModel() {
 
     private val _waveformData = MutableLiveData<IntArray>()
     private val _title = MutableLiveData<String>()
     private val _isPlaying = MutableLiveData<Boolean>()
-    private val _timestamp = MutableLiveData<Long>()
-    private val _duration = MutableLiveData<Long>()
+    private val _timestamp = MutableLiveData<String>()
+    private val _duration = MutableLiveData<String>()
 
     val waveformData: LiveData<IntArray> get() = _waveformData
     val title: LiveData<String> get() = _title
     val isPlaying: LiveData<Boolean> get() = _isPlaying
-    val timestamp: LiveData<Long> get() = _timestamp
-    val duration: LiveData<Long> get() = _duration
+    val timestamp: LiveData<String> get() = _timestamp
+    val duration: LiveData<String> get() = _duration
 
     private val mediaPlayer = MediaPlayer()
 
@@ -35,13 +35,37 @@ class MediaPlayerViewModel : ViewModel() {
         mediaPlayer.setDataSource(assetFileDescriptor)
         mediaPlayer.prepareAsync()
         extractRawData(assetFileDescriptor)
+        setMetadata()
+    }
+
+    fun setMetadata() {
+        _timestamp.value = getFormattedTime(mediaPlayer.currentPosition.toLong())
+        _duration.value = getFormattedTime(mediaPlayer.duration.toLong())
+    }
+
+    private fun getFormattedTime(milliseconds: Long): String {
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds) - TimeUnit.MINUTES.toSeconds(minutes)
+        return String.format("%02d:%02d", minutes, seconds)
     }
 
     fun togglePlayPause() {
         if (mediaPlayer.isPlaying) {
             mediaPlayer.pause()
+            _isPlaying.value = mediaPlayer.isPlaying
         } else {
             mediaPlayer.start()
+            _isPlaying.value = mediaPlayer.isPlaying
+            updateTimestamp()
+        }
+    }
+
+    private fun updateTimestamp() {
+        viewModelScope.launch {
+            while (mediaPlayer.isPlaying) {
+                _timestamp.value = getFormattedTime(mediaPlayer.currentPosition.toLong())
+                delay(500)
+            }
         }
     }
 

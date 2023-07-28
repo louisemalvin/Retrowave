@@ -1,19 +1,12 @@
 package com.paradoxcat.waveformtest
 
-import android.content.res.AssetFileDescriptor
 import android.media.AudioFormat
-import android.media.MediaExtractor
-import android.media.MediaFormat
 import android.media.MediaPlayer
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.paradoxcat.waveformtest.viewmodel.MediaPlayerViewModel
 import com.paradoxcat.waveformtest.waveviewer.databinding.ActivityMainBinding
-import kotlinx.coroutines.flow.collect
-import java.io.IOException
-import java.nio.ByteBuffer
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,8 +27,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var _binding: ActivityMainBinding
-    private lateinit var mediaPlayer: MediaPlayer
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
@@ -43,13 +34,24 @@ class MainActivity : AppCompatActivity() {
         val mediaPlayerViewModel: MediaPlayerViewModel by viewModels()
         val assetFileDescriptor = assets.openFd(EXAMPLE_AUDIO_FILE_NAME)
 
-        // initialize media player
+        // Set default audio to play
         mediaPlayerViewModel.setMedia(assetFileDescriptor)
+
+
         _binding.playButton.setOnClickListener {
             mediaPlayerViewModel.togglePlayPause()
         }
 
-        // draw it
+        // Observers
+        mediaPlayerViewModel.title.observe(this) { title ->
+            _binding.titleTextView.text = title
+        }
+        mediaPlayerViewModel.timestamp.observe(this) { timestamp ->
+            _binding.timestampTextView.text = timestamp
+        }
+        mediaPlayerViewModel.duration.observe(this) { duration ->
+            _binding.durationTextView?.text = duration.toString()
+        }
         mediaPlayerViewModel.waveformData.observe(this) { waveformData ->
             _binding.waveformView.setData(waveformData)
         }
