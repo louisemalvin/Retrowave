@@ -1,5 +1,5 @@
 # Retrowave - A Retro-Themed WAV Waveform Visualizer
-> Add a short project description here.
+ ___A simple waveform visualiser.___
 
 
 ## Quick Overview:
