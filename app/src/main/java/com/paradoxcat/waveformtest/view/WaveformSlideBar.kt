@@ -19,7 +19,9 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
     companion object {
         const val LEFT_RIGHT_PADDING = 50.0f
         const val TOP_BOTTOM_PADDING = 50.0f
-        const val SAMPLE_DOT_RADIUS = 2.0f
+        const val MIRROR_SAMPLES = false
+        const val LINE_WIDTH = 2.0f
+        const val DEFAULT_STEP_COUNT = 40000
         private val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
         val INV_MAX_VALUE = 1.0f / MAX_VALUE // multiply with this to get % of max value
 
@@ -35,33 +37,45 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
     }
 
     private val linePaint = Paint()
-    private val sampleDotPaint = Paint()
     private lateinit var waveForm: IntArray
 
     init {
-        linePaint.color = Color.rgb(0, 255, 0)
-        sampleDotPaint.color = Color.rgb(255, 0, 0)
+        linePaint.color = Color.rgb(0, 0, 0)
+        linePaint.strokeWidth = LINE_WIDTH
+        linePaint.strokeCap = Paint.Cap.ROUND
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
         if (::waveForm.isInitialized) {
+            val stepCount = DEFAULT_STEP_COUNT // how many samples to skip to draw maxLines
             val sampleDistance =
                 (width - LEFT_RIGHT_PADDING * 2) / (waveForm.size - 1) // distance between centers of 2 samples
+            val canvasWidth = width - LEFT_RIGHT_PADDING * 2 // width of the canvas minus paddings
             val maxAmplitude = height / 2.0f - TOP_BOTTOM_PADDING // max amount of px from middle to the edge minus pad
             val amplitudeScaleFactor = INV_MAX_VALUE * maxAmplitude // multiply by this to get number of px from middle
-
-            var prevX = LEFT_RIGHT_PADDING
-            var prevY = height / 2.0f - waveForm[0] * amplitudeScaleFactor
-            canvas?.drawCircle(prevX, prevY, SAMPLE_DOT_RADIUS, sampleDotPaint)
+            
+            // initialize y with the first sample value
+            var y = height / 2.0f - waveForm[0] * amplitudeScaleFactor
+            var stepIndex = 0
+            // draw samples to canvas
             for (i in 1 until waveForm.size) {
+                // average y-values of samples that is skipped until stepCount is reached
+                if (stepIndex < stepCount) {
+                    stepIndex++
+                    y = (y + (height / 2.0f - waveForm[i] * amplitudeScaleFactor)) / 2.0f
+                    continue
+                }
                 val x = LEFT_RIGHT_PADDING + i * sampleDistance
-                val y = height / 2.0f - waveForm[i] * amplitudeScaleFactor // y axis starts on top and is pointed down
-                canvas?.drawCircle(x, y, SAMPLE_DOT_RADIUS, sampleDotPaint)
-                canvas?.drawLine(prevX, prevY, x, y, linePaint)
-                prevX = x
-                prevY = y
+                // draw a straight line from y to middle or -y depending on MIRROR_SAMPLES
+                if (MIRROR_SAMPLES) {
+                    canvas?.drawLine(x, height - y, x, y, linePaint)
+                } else {
+                    canvas?.drawLine(x, height / 2.0f, x, y, linePaint)
+                }
+                // reset stepIndex
+                stepIndex = 0
             }
         }
     }
