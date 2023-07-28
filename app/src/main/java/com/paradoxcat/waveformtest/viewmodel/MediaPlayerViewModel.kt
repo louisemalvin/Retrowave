@@ -30,12 +30,16 @@ class MediaPlayerViewModel : ViewModel() {
     val duration: LiveData<String> get() = _duration
 
     private val mediaPlayer = MediaPlayer()
+    private var mediaPlayerExist = false
 
     fun setMedia(assetFileDescriptor: AssetFileDescriptor) {
-        mediaPlayer.setDataSource(assetFileDescriptor)
-        mediaPlayer.prepareAsync()
-        extractRawData(assetFileDescriptor)
-        setMetadata()
+        if (!mediaPlayerExist) {
+            mediaPlayer.setDataSource(assetFileDescriptor)
+            mediaPlayer.prepareAsync()
+            extractRawData(assetFileDescriptor)
+            setMetadata()
+            mediaPlayerExist = true
+        }
     }
 
     fun setMetadata() {
