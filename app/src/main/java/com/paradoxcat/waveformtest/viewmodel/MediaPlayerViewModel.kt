@@ -10,24 +10,28 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paradoxcat.waveformtest.MainActivity
+import com.paradoxcat.waveformtest.MainActivity.Companion.getFormattedTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 class MediaPlayerViewModel : ViewModel() {
+    companion object {
+        const val REFRESH_RATE = 17L
+    }
 
     private val _waveformData = MutableLiveData<IntArray>()
     private val _title = MutableLiveData<String>()
     private val _isPlaying = MutableLiveData<Boolean>()
-    private val _timestamp = MutableLiveData<String>()
-    private val _duration = MutableLiveData<String>()
+    private val _timestamp = MutableLiveData<Long>()
+    private val _duration = MutableLiveData<Long>()
 
     val waveformData: LiveData<IntArray> get() = _waveformData
     val title: LiveData<String> get() = _title
     val isPlaying: LiveData<Boolean> get() = _isPlaying
-    val timestamp: LiveData<String> get() = _timestamp
-    val duration: LiveData<String> get() = _duration
+    val timestamp: LiveData<Long> get() = _timestamp
+    val duration: LiveData<Long> get() = _duration
 
     private val mediaPlayer = MediaPlayer()
     private var mediaPlayerExist = false
@@ -43,14 +47,8 @@ class MediaPlayerViewModel : ViewModel() {
     }
 
     fun setMetadata() {
-        _timestamp.value = getFormattedTime(mediaPlayer.currentPosition.toLong())
-        _duration.value = getFormattedTime(mediaPlayer.duration.toLong())
-    }
-
-    private fun getFormattedTime(milliseconds: Long): String {
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
-        val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds) - TimeUnit.MINUTES.toSeconds(minutes)
-        return String.format("%02d:%02d", minutes, seconds)
+        _timestamp.value = mediaPlayer.currentPosition.toLong()
+        _duration.value = mediaPlayer.duration.toLong()
     }
 
     fun togglePlayPause() {
@@ -60,17 +58,25 @@ class MediaPlayerViewModel : ViewModel() {
         } else {
             mediaPlayer.start()
             _isPlaying.value = mediaPlayer.isPlaying
-            updateTimestamp()
+            updatePlaybackTimestamp()
         }
     }
 
-    private fun updateTimestamp() {
+    fun updateTimestamp() {
+        _timestamp.value = mediaPlayer.currentPosition.toLong()
+    }
+
+    private fun updatePlaybackTimestamp() {
         viewModelScope.launch {
             while (mediaPlayer.isPlaying) {
-                _timestamp.value = getFormattedTime(mediaPlayer.currentPosition.toLong())
-                delay(500)
+                updateTimestamp()
+                delay(REFRESH_RATE)
             }
         }
+    }
+
+    fun seekTo(milliseconds: Long) {
+        mediaPlayer.seekTo(milliseconds.toInt())
     }
 
     fun extractRawData(assetFileDescriptor: AssetFileDescriptor) {
