@@ -1,4 +1,4 @@
-package com.paradoxcat.waveformtest.view
+package com.paradoxcat.waveformtest.waveviewer
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Before
