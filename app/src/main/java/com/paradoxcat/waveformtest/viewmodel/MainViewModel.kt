@@ -13,9 +13,8 @@ import com.paradoxcat.waveformtest.MainActivity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
-import java.util.concurrent.TimeUnit
 
-class MediaPlayerViewModel : ViewModel() {
+class MainViewModel : ViewModel() {
     companion object {
         const val REFRESH_RATE = 17L
     }
@@ -35,12 +34,13 @@ class MediaPlayerViewModel : ViewModel() {
     private val mediaPlayer = MediaPlayer()
     private var mediaPlayerExist = false
 
-    fun setMedia(assetFileDescriptor: AssetFileDescriptor) {
+    fun setMedia(assetFileDescriptor: AssetFileDescriptor, title: String) {
         if (!mediaPlayerExist) {
             mediaPlayer.setDataSource(assetFileDescriptor)
             mediaPlayer.prepareAsync()
             extractRawData(assetFileDescriptor)
             setMetadata()
+            _title.value = title
             mediaPlayerExist = true
         }
     }
@@ -79,7 +79,7 @@ class MediaPlayerViewModel : ViewModel() {
         mediaPlayer.seekTo(milliseconds.toInt())
     }
 
-    fun extractRawData(assetFileDescriptor: AssetFileDescriptor) {
+    private fun extractRawData(assetFileDescriptor: AssetFileDescriptor) {
         // allocate a buffer
         var fileSize = assetFileDescriptor.length // in bytes
         if (fileSize == AssetFileDescriptor.UNKNOWN_LENGTH) {
