@@ -1,16 +1,20 @@
 package com.paradoxcat.waveformtest
 
+import android.content.Intent
 import android.media.AudioFormat
 import android.os.Bundle
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.paradoxcat.waveformtest.util.TimeConverter.getFormattedTime
 import com.paradoxcat.waveformtest.util.TimeConverter.millisecondsToProgress
 import com.paradoxcat.waveformtest.util.TimeConverter.progressToMilliseconds
-import com.paradoxcat.waveformtest.viewmodel.MediaPlayerViewModel
+import com.paradoxcat.waveformtest.viewmodel.MainViewModel
 import com.paradoxcat.waveformtest.waveviewer.databinding.ActivityMainBinding
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
@@ -35,15 +39,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(_binding.root)
-        val mediaPlayerViewModel: MediaPlayerViewModel by viewModels()
+        val mainViewModel: MainViewModel by viewModels()
         val assetFileDescriptor = assets.openFd(EXAMPLE_AUDIO_FILE_NAME)
 
         // Set default audio to play
-        mediaPlayerViewModel.setMedia(assetFileDescriptor)
+        _binding.loadFile.setOnClickListener {
+            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "audio/wav"
+                startActivityForResult(this, 0)
+            }
+        }
+
+        mainViewModel.setMedia(assetFileDescriptor, EXAMPLE_AUDIO_FILE_NAME)
 
 
         _binding.playButton.setOnClickListener {
-            mediaPlayerViewModel.togglePlayPause()
+            mainViewModel.togglePlayPause()
         }
 
         // SeekBar listener when user drags the thumb
@@ -52,11 +63,11 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     // Update the media player
-                    mediaPlayerViewModel.duration.observe(this@MainActivity) { duration ->
-                        mediaPlayerViewModel.seekTo(progressToMilliseconds(duration, progress))
+                    mainViewModel.duration.observe(this@MainActivity) { duration ->
+                        mainViewModel.seekTo(progressToMilliseconds(duration, progress))
                     }
                     // Update the timestamp
-                    mediaPlayerViewModel.updateTimestamp()
+                    mainViewModel.updateTimestamp()
                 }
             }
 
@@ -68,22 +79,26 @@ class MainActivity : AppCompatActivity() {
         })
 
         // observers
-        mediaPlayerViewModel.title.observe(this) { title ->
+        mainViewModel.title.observe(this) { title ->
             _binding.titleTextView.text = title
         }
-        mediaPlayerViewModel.timestamp.observe(this) { timestamp ->
+        mainViewModel.timestamp.observe(this) { timestamp ->
             _binding.timestampTextView.text = getFormattedTime(timestamp)
             // update seekbar position as well
-            mediaPlayerViewModel.duration.observe(this) { duration ->
+            mainViewModel.duration.observe(this) { duration ->
                 _binding.playbackSeekBar.progress =
                     millisecondsToProgress(timestamp, duration.toInt())
             }
         }
-        mediaPlayerViewModel.duration.observe(this) { duration ->
+        mainViewModel.duration.observe(this) { duration ->
             _binding.durationTextView?.text = getFormattedTime(duration)
         }
-        mediaPlayerViewModel.waveformData.observe(this) { waveformData ->
-            _binding.waveformView.setData(waveformData)
+
+        lifecycleScope.launch(Dispatchers.Main) {
+                mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
+                    _binding.waveformView.setData(waveformData)
+                }
         }
+
     }
 }
