@@ -1,20 +1,26 @@
-package com.paradoxcat.waveformtest.viewmodel
+package com.paradoxcat.waveviewer.viewmodel
 
 import android.content.res.AssetFileDescriptor
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaPlayer
 import android.util.Log
+import android.view.View
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.paradoxcat.waveformtest.MainActivity
+import com.paradoxcat.waveviewer.MainActivity
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
+import javax.inject.Inject
 
-class MainViewModel : ViewModel() {
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val mediaPlayer: MediaPlayer
+): ViewModel() {
     companion object {
         const val REFRESH_RATE = 17L
     }
@@ -31,7 +37,6 @@ class MainViewModel : ViewModel() {
     val timestamp: LiveData<Long> get() = _timestamp
     val duration: LiveData<Long> get() = _duration
 
-    private val mediaPlayer = MediaPlayer()
     private var mediaPlayerExist = false
 
     fun setMedia(assetFileDescriptor: AssetFileDescriptor, title: String) {

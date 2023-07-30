@@ -4,8 +4,9 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
-import com.paradoxcat.waveformtest.MainActivity
-import com.paradoxcat.waveformtest.model.Point
+import com.paradoxcat.waveviewer.MainActivity
+import com.paradoxcat.waveviewer.model.Point
+import com.paradoxcat.waveviewer.waveviewer.WaveformSlideBar
 import org.junit.Before
 import org.junit.Test
 import org.junit.internal.builders.JUnit4Builder
@@ -49,24 +50,31 @@ class WaveformSlideBarInstrumentedTest {
     }
 
     @Test
-    fun getPathChunk_invalid_index_equals() {
+    fun getPathChunk_invalid_startIndex_equals_endIndex() {
         init_point_noStep()
         val pathChunk = WaveformSlideBar.getPathChunk(points, 0, 0)
         assertThat(pathChunk.isEmpty).isTrue()
     }
 
     @Test
-    fun getPathChunk_invalid_index_lessThan() {
+    fun getPathChunk_invalid_endIndex_lessThan_startIndex() {
         init_point_noStep()
         val pathChunk = WaveformSlideBar.getPathChunk(points, 1, 0)
         assertThat(pathChunk.isEmpty).isTrue()
     }
 
     @Test
-    fun getPathChunk_value() {
+    fun getPathChunk_invalid_startIndex_lessThan_zero() {
         init_point_noStep()
-        val pathChunk = WaveformSlideBar.getPathChunk(points, 0, 1)
-        assertThat(pathChunk.toString()).isEqualTo("WHAT")
+        val pathChunk = WaveformSlideBar.getPathChunk(points, -1, 0)
+        assertThat(pathChunk.isEmpty).isTrue()
+    }
+
+    @Test
+    fun getPathChunk_invalid_endIndex_greaterThan_size() {
+        init_point_noStep()
+        val pathChunk = WaveformSlideBar.getPathChunk(points, 0, points.size + 1)
+        assertThat(pathChunk.isEmpty).isTrue()
     }
 
 

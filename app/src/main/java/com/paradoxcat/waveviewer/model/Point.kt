@@ -1,4 +1,4 @@
-package com.paradoxcat.waveformtest.model
+package com.paradoxcat.waveviewer.model
 
 data class Point(
     val x: Float,

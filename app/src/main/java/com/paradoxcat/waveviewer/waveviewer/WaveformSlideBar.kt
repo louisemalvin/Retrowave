@@ -1,4 +1,5 @@
-package com.paradoxcat.waveformtest.waveviewer
+package com.paradoxcat.waveviewer.waveviewer
+
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -8,7 +9,7 @@ import android.graphics.Path
 import android.util.AttributeSet
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.paradoxcat.waveformtest.model.Point
+import com.paradoxcat.waveviewer.model.Point
 import kotlin.math.floor
 import kotlin.math.pow
 
@@ -65,7 +66,11 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
         /**
          * Convert part of the waveform samples to a Path.
          */
-        fun getPathChunk(points: Array<Point>, startIndex : Int, endIndex : Int): Path {
+        fun getPathChunk(points: Array<Point>, startIndex: Int, endIndex: Int): Path {
+            // pre-condition check
+            if (startIndex >= endIndex || points.isEmpty() || startIndex < 0 || endIndex >= points.size) {
+                return Path()
+            }
             val result = Path()
             var prevX = points.first().x
             var prevY = points.first().y
@@ -108,7 +113,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
      * @param phase -- current animation phase, from 0.0 to 1.0
      */
     private fun render(points: Array<Point>, phase: Float) {
-        val nextDrawIndex : Int = floor(points.size * phase).toInt() - 1
+        val nextDrawIndex: Int = floor(points.size * phase).toInt() - 1
         waveform.addPath(getPathChunk(points, indexOfDrawnPoints, nextDrawIndex))
         indexOfDrawnPoints = nextDrawIndex + 1
         invalidate()

@@ -1,6 +1,6 @@
-package com.paradoxcat.waveformtest.util
+package com.paradoxcat.waveviewer.util
 
-import com.paradoxcat.waveformtest.MainActivity
+import com.paradoxcat.waveviewer.MainActivity
 import java.util.concurrent.TimeUnit
 
 object TimeConverter {

@@ -4,13 +4,12 @@ import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.common.truth.ExpectFailure
 import com.google.common.truth.Truth.assertThat
+import com.paradoxcat.waveviewer.viewmodel.MainViewModel
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.lang.Exception
 
 
 @RunWith(AndroidJUnit4::class)
@@ -73,7 +72,7 @@ class MainViewModelInstrumentedTest {
     }
 
     @Test
-    fun double_setMedia_mediaFile() {
+    fun setMedia_double_mediaFile() {
         mainViewModel.setMedia(
             context.assets.openFd(EXAMPLE_AUDIO_FILE_NAME_MEDIUM),
             EXAMPLE_AUDIO_FILE_NAME_MEDIUM
