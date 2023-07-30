@@ -2,6 +2,7 @@ package com.paradoxcat.waveformtest.waveviewer
 
 import android.content.Context
 import android.util.AttributeSet
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.paradoxcat.waveformtest.MainActivity
 import com.paradoxcat.waveformtest.model.Point
@@ -11,12 +12,10 @@ import org.junit.internal.builders.JUnit4Builder
 import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
-import org.robolectric.Robolectric
-import org.robolectric.RobolectricTestRunner
 
 // TODO: Fix 'posix:permissions' not supported as initial attribute' error //
-@RunWith(RobolectricTestRunner::class)
-class WaveformSlideBarTest {
+@RunWith(AndroidJUnit4::class)
+class WaveformSlideBarInstrumentedTest {
 
     companion object {
         const val SAMPLE_WIDTH = 1000
