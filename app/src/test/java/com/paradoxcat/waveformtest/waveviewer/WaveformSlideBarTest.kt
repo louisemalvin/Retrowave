@@ -2,7 +2,7 @@ package com.paradoxcat.waveformtest.waveviewer
 
 import com.google.common.truth.Truth.assertThat
 import com.paradoxcat.waveviewer.model.Point
-import com.paradoxcat.waveviewer.waveviewer.WaveformSlideBar
+import com.paradoxcat.waveviewer.view.WaveformSlideBar
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith

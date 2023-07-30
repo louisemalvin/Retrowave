@@ -1,4 +1,4 @@
-package com.paradoxcat.waveviewer.waveviewer
+package com.paradoxcat.waveviewer.view
 
 import android.animation.ValueAnimator
 import android.content.Context
@@ -24,8 +24,8 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
 
         const val LEFT_RIGHT_PADDING = 50.0f
         const val TOP_BOTTOM_PADDING = 50.0f
-        const val LINE_WIDTH = 2.0f
-        const val DEFAULT_STEP_COUNT = 2000
+        const val LINE_WIDTH = 1.0f
+        const val DEFAULT_STEP_COUNT = 20000
         const val ANIMATION_DURATION = 2000L
         private val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
         val INV_MAX_VALUE = 2.0f / MAX_VALUE // multiply with this to get % of max value
