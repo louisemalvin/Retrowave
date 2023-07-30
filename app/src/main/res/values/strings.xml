@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">ParadoxWaveViewer</string>
+    <string name="retro_text">RETRO</string>
+    <string name="wave_text">WAVE</string>
+    <string name="title_text">TITLE:</string>
+    <string name="music_title">music_mono_44100Hz_16bit.wav</string>
+    <string name="default_time">00:00</string>
+    <string name="load_file">LOAD FILE</string>
+    <string name="play_pause">Play/Pause</string>
 </resources>

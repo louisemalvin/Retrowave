@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="app_title">
+        <item name="android:fontFamily">@font/koulen</item>
+        <item name="android:textSize">25sp</item>
+        <item name="android:textColor">@color/red</item>
+    </style>
+    <style name="app_title.secondary">
+        <item name="android:textColor">@color/white</item>
+    </style>
+    <style name="header">
+        <item name="android:fontFamily">@font/hammersmith_one</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/black</item>
+    </style>
+    <style name="file_name">
+        <item name="android:fontFamily">@font/indie_flower</item>
+        <item name="android:textSize">25sp</item>
+        <item name="android:textAlignment">center</item>
+        <item name="android:textColor">@color/black</item>
+    </style>
+    <style name="timestamp">
+        <item name="android:fontFamily">@font/aubrey</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+</resources>

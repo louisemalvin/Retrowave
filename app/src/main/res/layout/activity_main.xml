@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="">
-
+    tools:context=".MainActivity">
 
     <com.paradoxcat.waveviewer.waveviewer.WaveformSlideBar
         android:id="@+id/waveformView"
@@ -16,18 +15,54 @@
         app:layout_constraintBottom_toBottomOf="parent"
         tools:layout_editor_absoluteX="0dp" />
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-        <TextView
+
+        <ImageView
+            android:id="@+id/imageView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="RETROWAVE"/>
-        
+            android:layout_marginStart="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:src="@drawable/ic_logo" />
 
+        <TextView
+            android:id="@+id/textView"
+            style="@style/app_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/koulen"
+            android:text="@string/retro_text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/imageView"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    </LinearLayout>
+        <TextView
+            style = "@style/app_title.secondary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/wave_text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/textView"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:src="@drawable/ic_settings" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -39,15 +74,13 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
+            style="@style/header"
             android:id="@+id/headerTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:background="@color/white"
-            android:fontFamily="@font/hammersmith_one"
-            android:text="TITLE:"
-            android:textColor="@color/black"
-            android:textSize="20sp"
+            android:text="@string/title_text"
             app:layout_constraintBottom_toTopOf="@+id/lineSeparator"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="1.0"
@@ -60,20 +93,12 @@
             android:background="@android:color/black" />
 
         <TextView
+            style="@style/file_name"
             android:id="@+id/titleTextView"
             android:layout_width="match_parent"
-            android:layout_height="36dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:background="@color/white"
-            android:fontFamily="@font/indie_flower"
-            android:text="music_mono_44100Hz_16bit.wav"
-            android:textAlignment="center"
-            android:textColor="@color/black"
-            android:textSize="25sp"
-            app:layout_constraintBottom_toTopOf="@+id/waveformView"
-            app:layout_constraintTop_toBottomOf="@+id/lineSeparator"
-            app:layout_constraintVertical_bias="1.0"
-            tools:layout_editor_absoluteX="0dp" />
+            android:text="@string/music_title" />
 
     </LinearLayout>
 
@@ -87,32 +112,26 @@
         app:layout_constraintTop_toBottomOf="@+id/waveformView">
 
         <TextView
+            style="@style/timestamp"
             android:id="@+id/timestampTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="4dp"
-            android:fontFamily="@font/aubrey"
-            android:text="00:00"
-            android:textColor="@color/white"
-            android:textSize="20sp" />
+            android:text="@string/default_time" />
 
         <TextView
+            style="@style/timestamp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/aubrey"
-            android:text="/"
-            android:textColor="@color/white"
-            android:textSize="20sp" />
+            android:text="/" />
 
         <TextView
+            style="@style/timestamp"
             android:id="@+id/durationTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
-            android:fontFamily="@font/aubrey"
-            android:text="00:00"
-            android:textColor="@color/white"
-            android:textSize="20sp" />
+            android:text="@string/default_time" />
 
     </LinearLayout>
 
@@ -134,7 +153,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_load_button"
             android:paddingHorizontal="10dp"
-            android:text="LOAD FILE"
+            android:text="@string/load_file"
             android:textColor="@color/white" />
 
         <androidx.appcompat.widget.AppCompatButton
@@ -144,16 +163,16 @@
             android:layout_marginStart="2dp"
             android:layout_weight="1"
             android:background="@drawable/bg_play_button"
-            android:text="Play/Pause"
+            android:text="@string/play_pause"
             android:textColor="@color/black" />
 
     </LinearLayout>
 
     <SeekBar
         android:id="@+id/playbackSeekBar"
-        android:max="10000"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:max="10000"
         android:progressTint="@color/black"
         android:thumb="@drawable/seekbar_thumb"
         app:layout_constraintBottom_toBottomOf="@+id/waveformView"
