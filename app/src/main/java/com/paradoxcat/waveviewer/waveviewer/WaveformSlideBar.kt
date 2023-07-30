@@ -10,8 +10,8 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.paradoxcat.waveviewer.model.Point
-import kotlin.math.floor
 import kotlin.math.pow
+import kotlin.math.round
 
 /**
  * Draws a straight line from the middle to samples points.
@@ -24,7 +24,6 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
 
         const val LEFT_RIGHT_PADDING = 50.0f
         const val TOP_BOTTOM_PADDING = 50.0f
-        const val MIRROR_SAMPLES = true
         const val LINE_WIDTH = 2.0f
         const val DEFAULT_STEP_COUNT = 2000
         const val ANIMATION_DURATION = 2000L
@@ -65,19 +64,26 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
 
         /**
          * Convert part of the waveform samples to a Path.
+         * @param points -- samples of the waveform in Point
+         * @param startIndex -- index of the first sample to draw
+         * @param endIndex -- index of the last sample to draw
+         * @return Path object of the waveform samples[startIndex, endIndex]
          */
         fun getPathChunk(points: Array<Point>, startIndex: Int, endIndex: Int): Path {
             // pre-condition check
-            if (startIndex >= endIndex || points.isEmpty() || startIndex < 0 || endIndex >= points.size) {
+            if (endIndex - startIndex <= 1 || points.isEmpty() || startIndex < 0 || endIndex >= points.size) {
                 return Path()
             }
             val result = Path()
-            var prevX = points.first().x
-            var prevY = points.first().y
+            // set starting point for the path
+            var prevX = points[startIndex].x
+            var prevY = points[startIndex].y
             result.moveTo(prevX, prevY)
-            for (point in points) {
-                val x = point.x
-                val y = point.y
+            // calculate points to draw from startIndex to endIndex
+            for (i in startIndex + 1 until endIndex) {
+                val x = points[i].x
+                val y = points[i].y
+                // calculate control points for the curve
                 val controlX1 = (prevX + x) / 2
                 val controlY1 = (prevY + y) / 2
                 result.quadTo(controlX1, controlY1, x, y)
@@ -99,7 +105,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
     init {
         linePaint.color = Color.rgb(0, 0, 0)
         linePaint.strokeWidth = LINE_WIDTH
-        linePaint.style = Paint.Style.FILL_AND_STROKE
+        linePaint.style = Paint.Style.STROKE
         linePaint.strokeCap = Paint.Cap.ROUND
         // initialize animator
         animator = ValueAnimator.ofFloat(0.0f, 1.0f)
@@ -113,7 +119,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
      * @param phase -- current animation phase, from 0.0 to 1.0
      */
     private fun render(points: Array<Point>, phase: Float) {
-        val nextDrawIndex: Int = floor(points.size * phase).toInt() - 1
+        val nextDrawIndex: Int = round(points.size * phase).toInt() - 1
         waveform.addPath(getPathChunk(points, indexOfDrawnPoints, nextDrawIndex))
         indexOfDrawnPoints = nextDrawIndex + 1
         invalidate()
