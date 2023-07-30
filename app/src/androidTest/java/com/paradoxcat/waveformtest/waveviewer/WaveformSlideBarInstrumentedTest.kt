@@ -1,18 +1,12 @@
 package com.paradoxcat.waveformtest.waveviewer
 
-import android.content.Context
-import android.util.AttributeSet
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
-import com.paradoxcat.waveviewer.MainActivity
 import com.paradoxcat.waveviewer.model.Point
 import com.paradoxcat.waveviewer.waveviewer.WaveformSlideBar
 import org.junit.Before
 import org.junit.Test
-import org.junit.internal.builders.JUnit4Builder
 import org.junit.runner.RunWith
-import org.mockito.Mockito
-import org.mockito.Mockito.mock
 
 // TODO: Fix 'posix:permissions' not supported as initial attribute' error //
 @RunWith(AndroidJUnit4::class)
@@ -48,6 +42,8 @@ class WaveformSlideBarInstrumentedTest {
         val pathChunk = WaveformSlideBar.getPathChunk(points, 0, 1)
         assertThat(pathChunk.isEmpty).isFalse()
     }
+
+    // TODO: test size of pathChunk
 
     @Test
     fun getPathChunk_invalid_startIndex_equals_endIndex() {
