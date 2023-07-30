@@ -26,8 +26,62 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
         const val MIRROR_SAMPLES = true
         const val LINE_WIDTH = 2.0f
         const val DEFAULT_STEP_COUNT = 2000
+        const val ANIMATION_DURATION = 2000L
         private val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
         val INV_MAX_VALUE = 2.0f / MAX_VALUE // multiply with this to get % of max value
+
+        /**
+         * Calculate points to draw for drawLines() method.
+         * @param waveform -- audio data in IntArray format
+         * @param width -- width of the view
+         * @param height -- height of the view
+         * @param stepCount -- how many samples to skip to draw maxLines
+         */
+        fun calculatePoints(
+            waveform: IntArray,
+            width: Int,
+            height: Int,
+            stepCount: Int
+        ): Array<Point> {
+            var result = arrayOf<Point>()
+            val sampleDistance =
+                (width - LEFT_RIGHT_PADDING * 2) / (waveform.size - 1) // distance between centers of 2 samples
+            val maxAmplitude =
+                height / 2.0f - TOP_BOTTOM_PADDING // max amount of px from middle to the edge minus pad
+            val amplitudeScaleFactor =
+                INV_MAX_VALUE * maxAmplitude // multiply by this to get number of px from middle
+
+            // calculate points for drawLines()
+            for (i in waveform.indices step stepCount) {
+                // TODO: fine-tune y-values with skipped samples
+                val x = LEFT_RIGHT_PADDING + i * sampleDistance
+                val y = (height / 2.0f - waveform[i] * amplitudeScaleFactor)
+                val point = Point(x, y)
+                result = result.plus(point)
+            }
+            return result
+        }
+
+        /**
+         * Convert part of the waveform samples to a Path.
+         */
+        fun getPathChunk(points: Array<Point>, startIndex : Int, endIndex : Int): Path {
+            val result = Path()
+            var prevX = points.first().x
+            var prevY = points.first().y
+            result.moveTo(prevX, prevY)
+            for (point in points) {
+                val x = point.x
+                val y = point.y
+                val controlX1 = (prevX + x) / 2
+                val controlY1 = (prevY + y) / 2
+                result.quadTo(controlX1, controlY1, x, y)
+                prevX = x
+                prevY = y
+            }
+            return result
+        }
+
 
     }
 
@@ -42,67 +96,22 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
         linePaint.strokeWidth = LINE_WIDTH
         linePaint.style = Paint.Style.FILL_AND_STROKE
         linePaint.strokeCap = Paint.Cap.ROUND
+        // initialize animator
         animator = ValueAnimator.ofFloat(0.0f, 1.0f)
         animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.duration = 2000
+        animator.duration = ANIMATION_DURATION
     }
+
     /**
-     * Calculate points to draw for drawLines() method.
-     * @param waveform -- audio data in IntArray format
-     * @param width -- width of the view
-     * @param height -- height of the view
-     * @param stepCount -- how many samples to skip to draw maxLines
+     * Render part of the waveform samples to the view.
+     * @param points -- array of samples to be drawn
+     * @param phase -- current animation phase, from 0.0 to 1.0
      */
-    private fun calculatePathPoints(
-        waveform: IntArray,
-        width: Int,
-        height: Int,
-        stepCount: Int
-    ): Array<Point> {
-        var result = arrayOf<Point>()
-        val sampleDistance =
-            (width - LEFT_RIGHT_PADDING * 2) / (waveform.size - 1) // distance between centers of 2 samples
-        val canvasWidth = width - LEFT_RIGHT_PADDING * 2 // width of the canvas minus paddings
-        val maxAmplitude =
-            height / 2.0f - TOP_BOTTOM_PADDING // max amount of px from middle to the edge minus pad
-        val amplitudeScaleFactor =
-            INV_MAX_VALUE * maxAmplitude // multiply by this to get number of px from middle
-
-        // calculate points for drawLines()
-        for (i in waveform.indices step stepCount) {
-            // TODO: fine-tune y-values with skipped samples
-            val x = LEFT_RIGHT_PADDING + i * sampleDistance
-            val y = (height / 2.0f - waveform[i] * amplitudeScaleFactor)
-            val point = Point(x, y)
-            // draw a straight line from y to middle or -y depending on mirrored flag
-            result = result.plus(point)
-        }
-        return result
-    }
-
-    private fun preparePath(points: Array<Point>): Path {
-        val result = Path()
-        var prevX = points.first().x
-        var prevY = points.first().y
-        result.moveTo(prevX, prevY)
-        for (point in points) {
-            val x = point.x
-            val y = point.y
-            val controlX1 = (prevX + x) / 2
-            val controlY1 = (prevY + y) / 2
-            result.quadTo(controlX1, controlY1, x, y)
-            prevX = x
-            prevY = y
-        }
-        return result
-    }
-
-    private fun render(points: Array<Point>, animationValue: Float) {
-        val nextDrawIndex : Int = floor(points.size * animationValue).toInt() - 1
-        if (nextDrawIndex <= indexOfDrawnPoints) return
-        val pointsToDraw = points.copyOfRange(indexOfDrawnPoints, nextDrawIndex)
+    private fun render(points: Array<Point>, phase: Float) {
+        val nextDrawIndex : Int = floor(points.size * phase).toInt() - 1
+        waveform.addPath(getPathChunk(points, indexOfDrawnPoints, nextDrawIndex))
         indexOfDrawnPoints = nextDrawIndex + 1
-        waveform.addPath(preparePath(pointsToDraw))
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -120,14 +129,13 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
      *                  not matter, since we are not rendering any time-related information yet.
      */
     fun setData(intArray: IntArray) {
-        val points = calculatePathPoints(intArray, width, height, DEFAULT_STEP_COUNT)
+        val points = calculatePoints(intArray, width, height, DEFAULT_STEP_COUNT)
         waveform = Path()
         indexOfDrawnPoints = 0
         animator.apply {
             addUpdateListener { animation ->
                 val phase = animation.animatedValue as Float
                 render(points, phase)
-                invalidate()
             }
         }
         animator.start()
