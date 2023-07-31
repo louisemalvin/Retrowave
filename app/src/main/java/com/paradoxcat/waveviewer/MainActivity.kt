@@ -1,10 +1,7 @@
 package com.paradoxcat.waveviewer
 
-import android.animation.ObjectAnimator
 import android.media.AudioFormat
 import android.os.Bundle
-import android.util.Log
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -36,7 +33,6 @@ class MainActivity : AppCompatActivity() {
         const val EXPECTED_NUM_CHANNELS = 1
         const val EXPECTED_SAMPLE_RATE = 44100
         const val EXPECTED_AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        const val SEEK_ANIMATION_DURATION = 200L
     }
 
     private lateinit var _binding: ActivityMainBinding
@@ -67,7 +63,6 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     // Update the media player
-                    animateSeekTo(progress)
                     mainViewModel.duration.observe(this@MainActivity) { duration ->
                         mainViewModel.seekTo(progressToMilliseconds(duration, progress))
                     }
@@ -108,18 +103,5 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-    }
-
-    private fun animateSeekTo(endValue: Int) {
-        val animator = ObjectAnimator.ofInt(
-            _binding.playbackSeekBar,
-            "progress",
-            _binding.playbackSeekBar.progress,
-            endValue
-        )
-        animator.duration = SEEK_ANIMATION_DURATION
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.start()
-        Log.i(TAG, "animateSeekTo: ${_binding.playbackSeekBar.progress} -> $endValue")
     }
 }
