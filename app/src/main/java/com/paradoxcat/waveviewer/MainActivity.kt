@@ -52,7 +52,8 @@ class MainActivity : AppCompatActivity() {
 //            }
 //        }
         _binding.rewindButton.setOnClickListener {
-            _binding.rewindButton.setData(0.0f)
+            _binding.rewindButton.togglePush(true)
+            mainViewModel.togglePlayPause()
         }
 
 
@@ -106,6 +107,9 @@ class MainActivity : AppCompatActivity() {
         }
         mainViewModel.isPlaying.observe(this) { isPlaying ->
             _binding.playbackIndicatorView.setData(isPlaying)
+            if (!isPlaying) {
+                _binding.rewindButton.toggleRelease()
+            }
         }
         mainViewModel.duration.observe(this) { duration ->
             _binding.durationTextView.text = getFormattedTime(duration)

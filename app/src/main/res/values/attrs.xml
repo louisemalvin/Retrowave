@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Custom attributes for the LayeredButton view -->
     <declare-styleable name="LayeredButton">
+        <!-- Color of the top layer. -->
         <attr name="topLayerColor" format="color" />
+        <!-- Color of the bottom layer. (usually darker version of top layer) -->
         <attr name="bottomLayerColor" format="color" />
+        <!-- Button depth value -->
         <attr name="heightDifference" format="dimension" />
+        <!-- Additional icon. -->
         <attr name="icon" format="reference" />
+        <!-- Color of the icon. -->
+        <attr name="iconColor" format="color" />
+        <!-- Corner radius for rounded buttons. -->
+        <attr name="cornerRadius" format="dimension" />
     </declare-styleable>
 </resources>

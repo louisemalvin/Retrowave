@@ -5,21 +5,34 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.AccelerateInterpolator
 import com.paradoxcat.waveviewer.R
 import kotlin.math.ceil
 
+/**
+ * Modular layered-button view for 3d touch-like interaction.
+ *
+ * Additional customization is done through XML attributes.
+ * See the XML resource file for more details.
+ */
 class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     companion object {
-        const val DEFAULT_HEIGHT_DIFFERENCE = 50f
+        const val TAG = "LayeredButton"
+        const val DEFAULT_MAX_HEIGHT_DIFFERENCE = 50f
         const val DEFAULT_CORNER_RADIUS = 10f
+        const val DEFAULT_LOCKED_HEIGHT_SCALE_FACTOR = 0.3f
         const val DEFAULT_TOP_LAYER_COLOR = "#FF0000"
         const val DEFAULT_BOTTOM_LAYER_COLOR = "#650000"
+        const val DEFAULT_ICON_COLOR = "#FFFFFF"
     }
 
     private lateinit var topRect: RectF
@@ -28,8 +41,13 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
     private val topLayerPaint = Paint()
     private val bottomLayerPaint = Paint()
 
-    private var heightDifference: Float = DEFAULT_HEIGHT_DIFFERENCE
+    private var lockScaleFactor = DEFAULT_LOCKED_HEIGHT_SCALE_FACTOR
+    private var cornerRadius = DEFAULT_CORNER_RADIUS
+    private var maxHeight = DEFAULT_MAX_HEIGHT_DIFFERENCE
+    private var currentMaxHeight = DEFAULT_MAX_HEIGHT_DIFFERENCE
+    private var currentHeight = DEFAULT_MAX_HEIGHT_DIFFERENCE
     private var icon: Drawable? = null
+    private var isLocked = false
 
     init {
         initTypedArrayOrDefault(attrs)
@@ -40,6 +58,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
      */
     private fun initTypedArrayOrDefault(attrs: AttributeSet?) {
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.LayeredButton)
+        // get color value
         topLayerPaint.color = typedArray.getColor(
             R.styleable.LayeredButton_topLayerColor,
             Color.parseColor(DEFAULT_TOP_LAYER_COLOR)
@@ -48,23 +67,45 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
             R.styleable.LayeredButton_bottomLayerColor,
             Color.parseColor(DEFAULT_BOTTOM_LAYER_COLOR)
         )
-        heightDifference = typedArray.getDimension(
+        // get max height difference
+        maxHeight = typedArray.getDimension(
             R.styleable.LayeredButton_heightDifference,
-            DEFAULT_HEIGHT_DIFFERENCE
+            DEFAULT_MAX_HEIGHT_DIFFERENCE
         )
+        currentMaxHeight = maxHeight
+        currentHeight = maxHeight
+        // get corner radius value
+        cornerRadius = typedArray.getDimension(
+            R.styleable.LayeredButton_cornerRadius,
+            DEFAULT_CORNER_RADIUS
+        )
+        // get icon reference and color
         icon = typedArray.getDrawable(R.styleable.LayeredButton_icon)
+        icon?.colorFilter = PorterDuffColorFilter(
+            typedArray.getColor(
+                R.styleable.LayeredButton_iconColor,
+                Color.parseColor(DEFAULT_ICON_COLOR)
+            ),
+            android.graphics.PorterDuff.Mode.SRC_IN
+        )
+        // xml read finished, recycle the typed array
         typedArray.recycle()
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        topRect = RectF(0f, 0f, w.toFloat(), h.toFloat() - heightDifference)
+    /**
+     * Initialize draw size after height and width are known.
+     */
+    override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight)
+        // initialize how the buttons should look like
+        topRect = RectF(0f, 0f, width.toFloat(), height.toFloat() - currentHeight)
         bottomRect = RectF(
             0f,
-            h.toFloat() - DEFAULT_HEIGHT_DIFFERENCE - DEFAULT_CORNER_RADIUS,
-            w.toFloat(),
-            h.toFloat()
+            height.toFloat() - DEFAULT_MAX_HEIGHT_DIFFERENCE - DEFAULT_CORNER_RADIUS,
+            width.toFloat(),
+            height.toFloat()
         )
+        // adjust icon bounds to the center of the top layer
         icon?.bounds = createIconBounds(topRect, icon!!)
     }
 
@@ -85,33 +126,45 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
             DEFAULT_CORNER_RADIUS,
             topLayerPaint
         )
-
-        icon?.draw(canvas?: return)
+        icon?.draw(canvas ?: return)
     }
 
+    /**
+     * Move top layer and icon according to height difference.
+     */
     private fun setHeightDifference(heightDifference: Float) {
         var newHeight = heightDifference
+        // pre-condition checks
+        // button could not be pushed lower than bottom layer
         if (heightDifference < 0) {
-            throw IllegalArgumentException("Height difference cannot be negative")
+            Log.e(TAG, "Set height < 0.")
+            throw IllegalArgumentException("Height < 0")
         }
-        if (heightDifference > DEFAULT_HEIGHT_DIFFERENCE) {
-            newHeight = DEFAULT_HEIGHT_DIFFERENCE
+        // button can only be pushed up to the default value
+        if (heightDifference > maxHeight) {
+            Log.w(TAG, "Set height > maximum allowed.")
+            newHeight = currentMaxHeight
         }
-        if (newHeight == this.heightDifference) {
-            return
-        }
+        // return if height is the same
+//        if (newHeight == this.currentHeight) {
+//            Log.i(TAG, "Set height is the same as current. Skipping.")
+//            return
+//        }
+
+        // adjust top layer and icon to the new value
         topRect = RectF(
             0f,
-            0f + DEFAULT_HEIGHT_DIFFERENCE - heightDifference,
+            0f + maxHeight - newHeight,
             width.toFloat(),
-            height.toFloat() - heightDifference
+            height.toFloat() - newHeight
         )
         icon?.bounds = createIconBounds(topRect, icon!!)
-        this.heightDifference = newHeight
+        this.currentHeight = newHeight
+        // refresh the view (calls onDraw())
         invalidate()
     }
 
-    fun createIconBounds(topRect: RectF, icon: Drawable): Rect {
+    private fun createIconBounds(topRect: RectF, icon: Drawable): Rect {
         val iconWidth = icon.intrinsicWidth
         val iconHeight = icon.intrinsicHeight
 
@@ -123,16 +176,51 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         return Rect(iconLeft, iconTop, iconRight, iconBottom)
     }
 
-    fun setData(heightDifference: Float) {
-        ObjectAnimator.ofFloat(
+    private fun getAnimator(vararg values: Float): ObjectAnimator {
+        // unpack varargs with * to array of values
+        return ObjectAnimator.ofFloat(
             this,
             "heightDifference",
-            this.heightDifference,
-            heightDifference,
-            DEFAULT_HEIGHT_DIFFERENCE
-        ).apply {
-            duration = 1000
-            start()
+            *values
+        )
+    }
+
+    fun setData(heightDifference: Float) {
+        val animator = getAnimator(currentHeight, heightDifference, currentMaxHeight)
+        animator.duration = 500
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.start()
+    }
+
+    fun togglePush(lock: Boolean) {
+        if (isLocked) {
+            return
+        }
+        // keeps the button 'pressed' if it is locked
+        if (lock) {
+            isLocked = true
+            currentMaxHeight = maxHeight * lockScaleFactor
+        }
+        val animator = getAnimator(currentHeight, 0f, currentMaxHeight)
+        animator.duration = 400
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.start()
+    }
+
+    fun toggleRelease() {
+        // unlock the button
+        if (isLocked) {
+            isLocked = false
+            currentMaxHeight = maxHeight
+            val animator = getAnimator(
+                currentHeight,
+                currentMaxHeight,
+                currentMaxHeight - 10f,
+                currentMaxHeight
+            )
+            animator.duration = 400
+            animator.interpolator = AccelerateInterpolator()
+            animator.start()
         }
     }
 }
