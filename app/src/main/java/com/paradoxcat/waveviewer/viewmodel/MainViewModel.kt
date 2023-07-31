@@ -5,7 +5,6 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaPlayer
 import android.util.Log
-import android.view.View
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -76,6 +75,7 @@ class MainViewModel @Inject constructor(
                 updateTimestamp()
                 delay(REFRESH_RATE)
             }
+            _isPlaying.value = mediaPlayer.isPlaying
             updateTimestamp()
         }
     }

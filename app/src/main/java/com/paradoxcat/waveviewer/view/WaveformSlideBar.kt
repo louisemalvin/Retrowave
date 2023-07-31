@@ -10,8 +10,8 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.paradoxcat.waveviewer.model.Point
+import kotlin.math.floor
 import kotlin.math.pow
-import kotlin.math.round
 
 /**
  * Draws a straight line from the middle to samples points.
@@ -22,10 +22,10 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
 
     companion object {
 
-        const val LEFT_RIGHT_PADDING = 50.0f
+        const val LEFT_RIGHT_PADDING = 45.0f
         const val TOP_BOTTOM_PADDING = 50.0f
         const val LINE_WIDTH = 1.0f
-        const val DEFAULT_STEP_COUNT = 20000
+        const val DEFAULT_STEP_COUNT = 2000
         const val ANIMATION_DURATION = 2000L
         private val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
         val INV_MAX_VALUE = 2.0f / MAX_VALUE // multiply with this to get % of max value
@@ -87,6 +87,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
                 val controlX1 = (prevX + x) / 2
                 val controlY1 = (prevY + y) / 2
                 result.quadTo(controlX1, controlY1, x, y)
+//                result.addCircle(x, y, 4.0f, Path.Direction.CW)
                 prevX = x
                 prevY = y
             }
@@ -119,19 +120,17 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
      * @param phase -- current animation phase, from 0.0 to 1.0
      */
     private fun render(points: Array<Point>, phase: Float) {
-        val nextDrawIndex: Int = round(points.size * phase).toInt() - 1
+        val nextDrawIndex: Int = floor(points.size * phase).toInt() - 1
         waveform.addPath(getPathChunk(points, indexOfDrawnPoints, nextDrawIndex))
-        indexOfDrawnPoints = nextDrawIndex + 1
+        indexOfDrawnPoints = nextDrawIndex
         invalidate()
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        canvas?.save()
         if (::waveform.isInitialized) {
             canvas?.drawPath(waveform, linePaint)
         }
-        canvas?.restore()
     }
 
     /**
@@ -141,7 +140,11 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
      */
     fun setData(intArray: IntArray) {
         val points = calculatePoints(intArray, width, height, DEFAULT_STEP_COUNT)
+        val initPath = Path()
+        initPath.moveTo(0F, height / 2.0f)
+        initPath.lineTo(width.toFloat(), height / 2.0f)
         waveform = Path()
+        waveform.addPath(initPath)
         indexOfDrawnPoints = 0
         animator.apply {
             addUpdateListener { animation ->
