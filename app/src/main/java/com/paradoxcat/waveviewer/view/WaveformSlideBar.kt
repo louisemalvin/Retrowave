@@ -25,10 +25,10 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
         const val LEFT_RIGHT_PADDING = 45.0f
         const val TOP_BOTTOM_PADDING = 50.0f
         const val LINE_WIDTH = 1.0f
-        const val DEFAULT_STEP_COUNT = 2000
+        const val DEFAULT_STEP_COUNT = 800
         const val ANIMATION_DURATION = 2000L
-        private val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
-        val INV_MAX_VALUE = 2.0f / MAX_VALUE // multiply with this to get % of max value
+        val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
+        private val INV_MAX_VALUE = 2.0f / MAX_VALUE // multiply with this to get % of max value
 
         /**
          * Calculate points to draw for drawLines() method.

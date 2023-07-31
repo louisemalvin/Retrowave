@@ -10,6 +10,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paradoxcat.waveviewer.MainActivity
+import com.paradoxcat.waveviewer.util.TimeConverter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -18,19 +19,23 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
+
     private val mediaPlayer: MediaPlayer
 ): ViewModel() {
     companion object {
+        const val TAG = "MainViewModel"
         const val REFRESH_RATE = 17L
     }
 
     private val _waveformData = MutableLiveData<IntArray>()
+    private val _currentWaveformIndex = MutableLiveData<Int>()
     private val _title = MutableLiveData<String>()
     private val _isPlaying = MutableLiveData<Boolean>()
     private val _timestamp = MutableLiveData<Long>()
     private val _duration = MutableLiveData<Long>()
 
     val waveformData: LiveData<IntArray> get() = _waveformData
+    val currentWaveform: LiveData<Int> get() = _currentWaveformIndex
     val title: LiveData<String> get() = _title
     val isPlaying: LiveData<Boolean> get() = _isPlaying
     val timestamp: LiveData<Long> get() = _timestamp
@@ -69,10 +74,21 @@ class MainViewModel @Inject constructor(
         _timestamp.value = mediaPlayer.currentPosition.toLong()
     }
 
+    fun updateWaveformIndex() {
+        if (_waveformData.value == null) return
+
+        val waveformLength = _waveformData.value!!.size
+        val progress = TimeConverter.millisecondsToProgress(_timestamp.value!!, _duration.value!!.toInt())
+         val index = (waveformLength.toFloat() * progress.toFloat() / TimeConverter.MAX_PROGRESS_VALUE).toInt() - 1
+        if (index < 0) return
+        _currentWaveformIndex.value = index
+    }
+
     private fun updatePlaybackTimestamp() {
         viewModelScope.launch {
             while (mediaPlayer.isPlaying) {
                 updateTimestamp()
+                updateWaveformIndex()
                 delay(REFRESH_RATE)
             }
             _isPlaying.value = mediaPlayer.isPlaying
@@ -82,6 +98,7 @@ class MainViewModel @Inject constructor(
 
     fun seekTo(milliseconds: Long) {
         mediaPlayer.seekTo(milliseconds.toInt())
+        Log.i(TAG, "Seeking to ${mediaPlayer.currentPosition}")
     }
 
     private fun extractRawData(assetFileDescriptor: AssetFileDescriptor) {
@@ -103,7 +120,7 @@ class MainViewModel @Inject constructor(
         // Otherwise we would have to first decode it e.g. using MediaCodec
         // Sanity checks:
         if (mediaExtractor.trackCount < 1) {
-            Log.e(MainActivity.TAG, "No media tracks found, aborting initialization")
+            Log.e(TAG, "No media tracks found, aborting initialization")
             return
         }
         val mime = mediaExtractor.getTrackFormat(0)
@@ -111,7 +128,7 @@ class MainViewModel @Inject constructor(
             mime.getInteger(MediaFormat.KEY_PCM_ENCODING) != MainActivity.EXPECTED_AUDIO_FORMAT
         ) {
             Log.e(
-                MainActivity.TAG, "Expected AudioFormat ${MainActivity.EXPECTED_AUDIO_FORMAT}, got AudioFormat ${mime.getInteger(
+                TAG, "Expected AudioFormat ${MainActivity.EXPECTED_AUDIO_FORMAT}, got AudioFormat ${mime.getInteger(
                     MediaFormat.KEY_PCM_ENCODING)}")
             return
         }
@@ -119,7 +136,7 @@ class MainViewModel @Inject constructor(
             mime.getInteger(MediaFormat.KEY_CHANNEL_COUNT) != MainActivity.EXPECTED_NUM_CHANNELS
         ) {
             Log.e(
-                MainActivity.TAG, "Expected ${MainActivity.EXPECTED_NUM_CHANNELS} channels, got ${mime.getInteger(
+                TAG, "Expected ${MainActivity.EXPECTED_NUM_CHANNELS} channels, got ${mime.getInteger(
                     MediaFormat.KEY_CHANNEL_COUNT)}")
             return
         }
@@ -127,7 +144,7 @@ class MainViewModel @Inject constructor(
             mime.getInteger(MediaFormat.KEY_SAMPLE_RATE) != MainActivity.EXPECTED_SAMPLE_RATE
         ) {
             Log.e(
-                MainActivity.TAG, "Expected ${MainActivity.EXPECTED_SAMPLE_RATE} sample rate, got ${mime.getInteger(
+                TAG, "Expected ${MainActivity.EXPECTED_SAMPLE_RATE} sample rate, got ${mime.getInteger(
                     MediaFormat.KEY_SAMPLE_RATE)}")
             return
         }
@@ -147,11 +164,11 @@ class MainViewModel @Inject constructor(
 
     private fun transformRawData(buffer: ByteBuffer): IntArray {
         val nSamples = buffer.limit() / 2 // assuming 16-bit PCM mono
-        val waveForm = IntArray(nSamples)
+        val waveform = IntArray(nSamples)
         for (i in 1 until buffer.limit() step 2) {
-            waveForm[i / 2] = (buffer[i].toInt() shl 8) or buffer[i - 1].toInt()
+            waveform[i / 2] = (buffer[i].toInt() shl 8) or buffer[i - 1].toInt()
         }
-        return waveForm
+        return waveform
     }
 
     override fun onCleared() {

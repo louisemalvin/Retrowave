@@ -11,10 +11,12 @@ import com.paradoxcat.waveviewer.databinding.ActivityMainBinding
 import com.paradoxcat.waveviewer.util.TimeConverter.getFormattedTime
 import com.paradoxcat.waveviewer.util.TimeConverter.millisecondsToProgress
 import com.paradoxcat.waveviewer.util.TimeConverter.progressToMilliseconds
+import com.paradoxcat.waveviewer.view.WaveformSlideBar
 import com.paradoxcat.waveviewer.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -51,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 //                startActivityForResult(this, 0)
 //            }
 //        }
-        
+
         _binding.rewindButton.setOnClickListener {
             _binding.rewindButton.togglePush(false)
         }
@@ -123,6 +125,29 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.Main) {
             mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
                 _binding.waveformView.setData(waveformData)
+            }
+        }
+
+        mainViewModel.currentWaveform.observe(this) { currentWaveform ->
+            mainViewModel.waveformData.value?.let { waveformData ->
+                val waveform = abs(waveformData[currentWaveform])
+                if (waveform in 5000..10000) {
+                    val percent = waveform / WaveformSlideBar.MAX_VALUE
+                    _binding.playButton.vibrate(percent)
+                    Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
+                }
+                if (waveform in 10000..15000) {
+                    val percent = waveform / WaveformSlideBar.MAX_VALUE
+                    _binding.rewindButton.vibrate(percent)
+                    Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
+                }
+                if (waveform in 15001..WaveformSlideBar.MAX_VALUE.toInt()) {
+                    val percent = waveform / WaveformSlideBar.MAX_VALUE
+                    _binding.settingsButton.vibrate(percent)
+                    Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
+                }
+
+
             }
         }
 

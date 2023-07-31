@@ -85,6 +85,7 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : View(context, a
         // Initialize gradient color for on state
         val center = width / 2f
         val radius = center - 50f
+        if (radius <= 0) return
         val gradient = RadialGradient(
             center, center, radius,
             innerColorOn, innerColorOff,
