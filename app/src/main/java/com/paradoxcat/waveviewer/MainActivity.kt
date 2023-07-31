@@ -2,6 +2,7 @@ package com.paradoxcat.waveviewer
 
 import android.media.AudioFormat
 import android.os.Bundle
+import android.util.Log
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -25,10 +26,10 @@ class MainActivity : AppCompatActivity() {
         // A real gravitational wave from https://www.gw-openscience.org/audio/
         // It was a GW150914 binary black hole merger event that LIGO has detected,
         // waveform template derived from GR, whitened, frequency shifted +400 Hz
-//         const val EXAMPLE_AUDIO_FILE_NAME = "gravitational_wave_mono_44100Hz_16bit.wav" // takes forever, but loads eventually
-//        const val EXAMPLE_AUDIO_FILE_NAME = "whistle_mono_44100Hz_16bit.wav" // small enough to load
-        const val EXAMPLE_AUDIO_FILE_NAME =
-            "music_mono_44100Hz_16bit.wav" // too large to load currently!
+//         const val EXAMPLE_AUDIO_FILE_NAME = "gravitational_wave_mono_44100Hz_16bit.wav"
+//        const val EXAMPLE_AUDIO_FILE_NAME = "whistle_mono_44100Hz_16bit.wav"
+
+        const val EXAMPLE_AUDIO_FILE_NAME = "music_mono_44100Hz_16bit.wav"
         const val MAX_PROGRESS_VALUE = 10000
         const val EXPECTED_NUM_CHANNELS = 1
         const val EXPECTED_SAMPLE_RATE = 44100
@@ -50,6 +51,10 @@ class MainActivity : AppCompatActivity() {
 //                startActivityForResult(this, 0)
 //            }
 //        }
+        _binding.rewindButton.setOnClickListener {
+            _binding.rewindButton.setData(0.0f)
+        }
+
 
         mainViewModel.setMedia(assetFileDescriptor, EXAMPLE_AUDIO_FILE_NAME)
 
@@ -62,6 +67,15 @@ class MainActivity : AppCompatActivity() {
             SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
+                    Log.i(
+                        TAG,
+                        "User input progress: $progress, ms: ${
+                            progressToMilliseconds(
+                                mainViewModel.duration.value!!,
+                                progress
+                            )
+                        }"
+                    )
                     // Update the media player
                     mainViewModel.duration.observe(this@MainActivity) { duration ->
                         mainViewModel.seekTo(progressToMilliseconds(duration, progress))
@@ -91,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         mainViewModel.isPlaying.observe(this) { isPlaying ->
-                _binding.playbackIndicatorView.setData(isPlaying)
+            _binding.playbackIndicatorView.setData(isPlaying)
         }
         mainViewModel.duration.observe(this) { duration ->
             _binding.durationTextView.text = getFormattedTime(duration)

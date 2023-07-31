@@ -1,16 +1,16 @@
 package com.paradoxcat.waveviewer.util
 
-import com.paradoxcat.waveviewer.MainActivity
 import java.util.concurrent.TimeUnit
 
 object TimeConverter {
+    private const val MAX_PROGRESS_VALUE = 10000
     /**
      * Convert SeekBar progress value to milliseconds
      * @param milliseconds total duration of the audio file
      * @param progress current SeekBar progress value
      */
     fun progressToMilliseconds(milliseconds: Long, progress: Int): Long {
-        return (milliseconds * progress / MainActivity.MAX_PROGRESS_VALUE)
+        return (milliseconds * progress / MAX_PROGRESS_VALUE)
     }
 
     /**
@@ -19,7 +19,7 @@ object TimeConverter {
      * @param totalMilliseconds total duration of the audio file
      */
     fun millisecondsToProgress(currentMilliseconds: Long, totalMilliseconds: Int): Int {
-        return (currentMilliseconds * MainActivity.MAX_PROGRESS_VALUE / totalMilliseconds).toInt()
+        return (currentMilliseconds * MAX_PROGRESS_VALUE / totalMilliseconds).toInt()
     }
 
     /**

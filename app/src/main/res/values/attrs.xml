@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="LayeredButton">
+        <attr name="topLayerColor" format="color" />
+        <attr name="bottomLayerColor" format="color" />
+        <attr name="heightDifference" format="dimension" />
+        <attr name="icon" format="reference" />
+    </declare-styleable>
+</resources>
