@@ -28,7 +28,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
     private val topLayerPaint = Paint()
     private val bottomLayerPaint = Paint()
 
-    private var heightDifference: Float
+    private var heightDifference: Float = DEFAULT_HEIGHT_DIFFERENCE
     private var icon: Drawable? = null
 
     init {
