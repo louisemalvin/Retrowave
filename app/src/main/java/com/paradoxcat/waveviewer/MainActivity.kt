@@ -51,17 +51,22 @@ class MainActivity : AppCompatActivity() {
 //                startActivityForResult(this, 0)
 //            }
 //        }
+        
         _binding.rewindButton.setOnClickListener {
-            _binding.rewindButton.togglePush(true)
+            _binding.rewindButton.togglePush(false)
+        }
+
+        _binding.settingsButton.setOnClickListener {
+            _binding.settingsButton.togglePush(false)
+        }
+
+        _binding.playButton.setOnClickListener {
             mainViewModel.togglePlayPause()
+            _binding.playButton.togglePush(true)
         }
 
 
         mainViewModel.setMedia(assetFileDescriptor, EXAMPLE_AUDIO_FILE_NAME)
-
-        _binding.playButton.setOnClickListener {
-            mainViewModel.togglePlayPause()
-        }
 
         // SeekBar listener when user drags the thumb
         _binding.playbackSeekBar.setOnSeekBarChangeListener(object :
@@ -108,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         mainViewModel.isPlaying.observe(this) { isPlaying ->
             _binding.playbackIndicatorView.setData(isPlaying)
             if (!isPlaying) {
-                _binding.rewindButton.toggleRelease()
+                _binding.playButton.toggleRelease()
             }
         }
         mainViewModel.duration.observe(this) { duration ->

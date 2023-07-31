@@ -29,7 +29,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         const val TAG = "LayeredButton"
         const val DEFAULT_MAX_HEIGHT_DIFFERENCE = 50f
         const val DEFAULT_CORNER_RADIUS = 10f
-        const val DEFAULT_LOCKED_HEIGHT_SCALE_FACTOR = 0.3f
+        const val DEFAULT_LOCKED_HEIGHT_SCALE_FACTOR = 0.5f
         const val DEFAULT_TOP_LAYER_COLOR = "#FF0000"
         const val DEFAULT_BOTTOM_LAYER_COLOR = "#650000"
         const val DEFAULT_ICON_COLOR = "#FFFFFF"
@@ -101,7 +101,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         topRect = RectF(0f, 0f, width.toFloat(), height.toFloat() - currentHeight)
         bottomRect = RectF(
             0f,
-            height.toFloat() - DEFAULT_MAX_HEIGHT_DIFFERENCE - DEFAULT_CORNER_RADIUS,
+            height.toFloat() - maxHeight - cornerRadius,
             width.toFloat(),
             height.toFloat()
         )
@@ -185,7 +185,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         )
     }
 
-    fun setData(heightDifference: Float) {
+    fun vibrate(heightDifference: Float) {
         val animator = getAnimator(currentHeight, heightDifference, currentMaxHeight)
         animator.duration = 500
         animator.interpolator = AccelerateDecelerateInterpolator()

@@ -139,44 +139,46 @@
 
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/linearButtonLayout"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/waveformView">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout"
+        app:layout_constraintVertical_bias="0.486"
+        tools:layout_editor_absoluteX="112dp">
+
+        <com.paradoxcat.waveviewer.view.LayeredButton
+            android:id="@+id/playButton"
+            android:layout_width="117dp"
+            android:layout_height="80dp"
+            app:bottomLayerColor="@color/dark_red"
+            app:icon="@drawable/ic_play_pause"
+            app:layout_constraintEnd_toStartOf="@+id/rewindButton"
+            app:layout_constraintTop_toTopOf="parent"
+            app:topLayerColor="@color/red" />
 
         <com.paradoxcat.waveviewer.view.LayeredButton
             android:id="@+id/rewindButton"
             android:layout_width="117dp"
             android:layout_height="80dp"
-            app:bottomLayerColor="@color/dark_red"
-            app:topLayerColor="@color/red"
-            app:icon="@drawable/ic_play_pause"
-            />
+            app:bottomLayerColor="@color/teal_700"
+            app:icon="@drawable/ic_logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:topLayerColor="@color/teal_200" />
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/playButton"
-            android:layout_width="5dp"
-            android:layout_height="90dp"
-            android:layout_marginStart="2dp"
-            android:layout_weight="1"
-            android:background="@drawable/play_button_layer"
-            android:textColor="@color/black" />
-
-        <androidx.appcompat.widget.AppCompatButton
+        <com.paradoxcat.waveviewer.view.LayeredButton
             android:id="@+id/settingsButton"
-            android:layout_width="5dp"
-            android:layout_height="90dp"
-            android:layout_marginStart="2dp"
-            android:layout_weight="1"
-            android:background="@drawable/settings_button_layer"
-            android:textColor="@color/black" />
+            android:layout_width="117dp"
+            android:layout_height="80dp"
+            app:bottomLayerColor="@color/purple_700"
+            app:icon="@drawable/ic_settings"
+            app:layout_constraintStart_toEndOf="@+id/rewindButton"
+            app:layout_constraintTop_toTopOf="parent"
+            app:topLayerColor="@color/purple_500" />
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <SeekBar
         android:id="@+id/playbackSeekBar"
