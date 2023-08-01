@@ -1,6 +1,5 @@
 package com.paradoxcat.waveviewer.view
 
-import android.animation.ObjectAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -11,7 +10,6 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.util.Log
-import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import com.paradoxcat.waveviewer.R
@@ -23,7 +21,7 @@ import kotlin.math.ceil
  * Additional customization is done through XML attributes.
  * See the XML resource file for more details.
  */
-class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attrs) {
+class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context, attrs) {
 
     companion object {
         const val TAG = "LayeredButton"
@@ -92,23 +90,6 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         typedArray.recycle()
     }
 
-    /**
-     * Initialize draw size after height and width are known.
-     */
-    override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
-        super.onSizeChanged(width, height, oldWidth, oldHeight)
-        // initialize how the buttons should look like
-        topRect = RectF(0f, 0f, width.toFloat(), height.toFloat() - currentHeight)
-        bottomRect = RectF(
-            0f,
-            height.toFloat() - maxHeight - cornerRadius,
-            width.toFloat(),
-            height.toFloat()
-        )
-        // adjust icon bounds to the center of the top layer
-        icon?.bounds = createIconBounds(topRect, icon!!)
-    }
-
     override fun onDraw(canvas: Canvas?) {
         if (!this::topRect.isInitialized) {
             return
@@ -129,27 +110,43 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         icon?.draw(canvas ?: return)
     }
 
-    /**
-     * Move top layer and icon according to height difference.
-     */
-    private fun setHeightDifference(heightDifference: Float) {
-        var newHeight = heightDifference
+    override fun render() {
+        // pre-condition check
+        if (width==0 || height==0) {
+            return
+        }
+        // initialize how the buttons should look like
+        topRect = RectF(0f, 0f, width.toFloat(), height.toFloat() - currentHeight)
+        bottomRect = RectF(
+            0f,
+            height.toFloat() - maxHeight - cornerRadius,
+            width.toFloat(),
+            height.toFloat()
+        )
+        // adjust icon bounds to the center of the top layer
+        icon?.bounds = createIconBounds(topRect, icon!!)
+        invalidate()
+    }
+
+    @Suppress("unused")
+    override fun setAnimation(animationValue: Float) {
+        var newHeight = animationValue
         // pre-condition checks
         // button could not be pushed lower than bottom layer
-        if (heightDifference < 0) {
+        if (animationValue < 0) {
             Log.e(TAG, "Set height < 0.")
             throw IllegalArgumentException("Height < 0")
         }
         // button can only be pushed up to the default value
-        if (heightDifference > maxHeight) {
+        if (animationValue > maxHeight) {
             Log.w(TAG, "Set height > maximum allowed.")
             newHeight = currentMaxHeight
         }
         // return if height is the same
-//        if (newHeight == this.currentHeight) {
-//            Log.i(TAG, "Set height is the same as current. Skipping.")
-//            return
-//        }
+        if (newHeight==this.currentHeight) {
+            Log.i(TAG, "Set height is the same as current. Skipping.")
+            return
+        }
 
         // adjust top layer and icon to the new value
         topRect = RectF(
@@ -160,7 +157,6 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         )
         icon?.bounds = createIconBounds(topRect, icon!!)
         this.currentHeight = newHeight
-        // refresh the view (calls onDraw())
         invalidate()
     }
 
@@ -176,23 +172,14 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         return Rect(iconLeft, iconTop, iconRight, iconBottom)
     }
 
-    private fun getAnimator(vararg values: Float): ObjectAnimator {
-        // unpack varargs with * to array of values
-        return ObjectAnimator.ofFloat(
-            this,
-            "heightDifference",
-            *values
-        )
-    }
-
-    fun vibrate(heightDifference: Float) {
+    fun setData(heightDifference: Float) {
         val animator = getAnimator(currentHeight, heightDifference, currentMaxHeight)
         animator.duration = 500
         animator.interpolator = AccelerateDecelerateInterpolator()
         animator.start()
     }
 
-    fun togglePush(lock: Boolean) {
+    fun setData(lock: Boolean) {
         if (isLocked) {
             return
         }
@@ -207,7 +194,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : View(context, attr
         animator.start()
     }
 
-    fun toggleRelease() {
+    fun setData() {
         // unlock the button
         if (isLocked) {
             isLocked = false

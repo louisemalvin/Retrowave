@@ -6,7 +6,6 @@ import android.util.Log
 import android.widget.SeekBar
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.paradoxcat.waveviewer.databinding.ActivityMainBinding
 import com.paradoxcat.waveviewer.util.TimeConverter.getFormattedTime
 import com.paradoxcat.waveviewer.util.TimeConverter.millisecondsToProgress
@@ -14,8 +13,6 @@ import com.paradoxcat.waveviewer.util.TimeConverter.progressToMilliseconds
 import com.paradoxcat.waveviewer.view.WaveformSlideBar
 import com.paradoxcat.waveviewer.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @AndroidEntryPoint
@@ -31,8 +28,7 @@ class MainActivity : AppCompatActivity() {
 //         const val EXAMPLE_AUDIO_FILE_NAME = "gravitational_wave_mono_44100Hz_16bit.wav"
 //        const val EXAMPLE_AUDIO_FILE_NAME = "whistle_mono_44100Hz_16bit.wav"
 
-        const val EXAMPLE_AUDIO_FILE_NAME = "music_mono_44100Hz_16bit.wav"
-        const val MAX_PROGRESS_VALUE = 10000
+                const val EXAMPLE_AUDIO_FILE_NAME = "music_mono_44100Hz_16bit.wav"
         const val EXPECTED_NUM_CHANNELS = 1
         const val EXPECTED_SAMPLE_RATE = 44100
         const val EXPECTED_AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
@@ -55,16 +51,16 @@ class MainActivity : AppCompatActivity() {
 //        }
 
         _binding.rewindButton.setOnClickListener {
-            _binding.rewindButton.togglePush(false)
+            _binding.rewindButton.setData(false)
         }
 
         _binding.settingsButton.setOnClickListener {
-            _binding.settingsButton.togglePush(false)
+            _binding.settingsButton.setData(false)
         }
 
         _binding.playButton.setOnClickListener {
             mainViewModel.togglePlayPause()
-            _binding.playButton.togglePush(true)
+            _binding.playButton.setData(true)
         }
 
 
@@ -107,25 +103,22 @@ class MainActivity : AppCompatActivity() {
         mainViewModel.timestamp.observe(this) { timestamp ->
             _binding.timestampTextView.text = getFormattedTime(timestamp)
             // update seekbar position as well
-            mainViewModel.duration.observe(this) { duration ->
-                _binding.playbackSeekBar.progress =
-                    millisecondsToProgress(timestamp, duration.toInt())
-            }
+            val duration = mainViewModel.duration.value
+            _binding.playbackSeekBar.progress = millisecondsToProgress(timestamp, duration!!)
+            Log.d(TAG, "timestamp: $timestamp, duration: $duration seekbar progress = ${_binding.playbackSeekBar.progress}")
         }
         mainViewModel.isPlaying.observe(this) { isPlaying ->
             _binding.playbackIndicatorView.setData(isPlaying)
             if (!isPlaying) {
-                _binding.playButton.toggleRelease()
+                _binding.playButton.setData()
             }
         }
         mainViewModel.duration.observe(this) { duration ->
             _binding.durationTextView.text = getFormattedTime(duration)
         }
 
-        lifecycleScope.launch(Dispatchers.Main) {
-            mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
-                _binding.waveformView.setData(waveformData)
-            }
+        mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
+            _binding.waveformView.setData(waveformData)
         }
 
         mainViewModel.currentWaveform.observe(this) { currentWaveform ->
@@ -133,17 +126,17 @@ class MainActivity : AppCompatActivity() {
                 val waveform = abs(waveformData[currentWaveform])
                 if (waveform in 5000..10000) {
                     val percent = waveform / WaveformSlideBar.MAX_VALUE
-                    _binding.playButton.vibrate(percent)
+                    _binding.playButton.setData(percent)
                     Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
                 }
                 if (waveform in 10000..15000) {
                     val percent = waveform / WaveformSlideBar.MAX_VALUE
-                    _binding.rewindButton.vibrate(percent)
+                    _binding.rewindButton.setData(percent)
                     Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
                 }
                 if (waveform in 15001..WaveformSlideBar.MAX_VALUE.toInt()) {
                     val percent = waveform / WaveformSlideBar.MAX_VALUE
-                    _binding.settingsButton.vibrate(percent)
+                    _binding.settingsButton.setData(percent)
                     Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
                 }
 

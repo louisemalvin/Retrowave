@@ -1,13 +1,12 @@
 package com.paradoxcat.waveviewer.view
 
-import android.animation.ValueAnimator
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
-import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.paradoxcat.waveviewer.model.Point
 import kotlin.math.floor
@@ -18,15 +17,17 @@ import kotlin.math.pow
  * All functionality assumes that provided data has only 1 channel, 44100 Hz sample rate, 16-bits per sample, and is
  * already without WAV header.
  */
-class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, attrs) {
+class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(context, attrs) {
 
     companion object {
-
-        const val LEFT_RIGHT_PADDING = 45.0f
-        const val TOP_BOTTOM_PADDING = 50.0f
+        const val TAG = "WaveformSlideBar"
+        private const val LEFT_RIGHT_PADDING = 45.0f
+        private const val TOP_BOTTOM_PADDING = 50.0f
         const val LINE_WIDTH = 1.0f
-        const val DEFAULT_STEP_COUNT = 800
+        const val DEFAULT_STEP_COUNT = 1000
         const val ANIMATION_DURATION = 2000L
+        const val ANIMATION_START_PERCENTAGE = 0.0f
+        const val ANIMATION_END_PERCENTAGE = 1.0f
         val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
         private val INV_MAX_VALUE = 2.0f / MAX_VALUE // multiply with this to get % of max value
 
@@ -87,7 +88,6 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
                 val controlX1 = (prevX + x) / 2
                 val controlY1 = (prevY + y) / 2
                 result.quadTo(controlX1, controlY1, x, y)
-//                result.addCircle(x, y, 4.0f, Path.Direction.CW)
                 prevX = x
                 prevY = y
             }
@@ -98,32 +98,30 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
     }
 
     private lateinit var waveform: Path
+    private lateinit var rawData: IntArray
+    private lateinit var points: Array<Point>
+    private lateinit var animator: ObjectAnimator
 
     private val linePaint = Paint()
-    private val animator: ValueAnimator
+
     private var indexOfDrawnPoints: Int = 0
 
     init {
-        linePaint.color = Color.rgb(0, 0, 0)
+        initLinePaint()
+        initAnimator()
+    }
+
+    private fun initLinePaint() {
+        linePaint.color = Color.BLACK
         linePaint.strokeWidth = LINE_WIDTH
         linePaint.style = Paint.Style.STROKE
         linePaint.strokeCap = Paint.Cap.ROUND
-        // initialize animator
-        animator = ValueAnimator.ofFloat(0.0f, 1.0f)
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.duration = ANIMATION_DURATION
     }
 
-    /**
-     * Render part of the waveform samples to the view.
-     * @param points -- array of samples to be drawn
-     * @param phase -- current animation phase, from 0.0 to 1.0
-     */
-    private fun render(points: Array<Point>, phase: Float) {
-        val nextDrawIndex: Int = floor(points.size * phase).toInt() - 1
-        waveform.addPath(getPathChunk(points, indexOfDrawnPoints, nextDrawIndex))
-        indexOfDrawnPoints = nextDrawIndex
-        invalidate()
+    private fun initAnimator() {
+        animator = getAnimator( ANIMATION_START_PERCENTAGE, ANIMATION_END_PERCENTAGE)
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.duration = ANIMATION_DURATION
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -133,25 +131,34 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : View(context, at
         }
     }
 
+    override fun render() {
+        // pre-condition check
+        if (width==0 || height==0) {
+            return
+        }
+        waveform = Path()
+        waveform.moveTo(0F, height / 2.0f)
+        waveform.lineTo(width.toFloat(), height / 2.0f)
+        points = calculatePoints(rawData, width, height, DEFAULT_STEP_COUNT)
+        indexOfDrawnPoints = 0
+        animator.start()
+    }
+
+    override fun setAnimation(animationValue: Float) {
+        val nextDrawIndex: Int = floor(points.size * animationValue).toInt() - 1
+        waveform.addPath(getPathChunk(points, indexOfDrawnPoints, nextDrawIndex))
+        indexOfDrawnPoints = nextDrawIndex
+        invalidate()
+    }
+
     /**
      * Set raw audio data and draw it.
      * @param buffer -- raw audio buffer must be 16-bit samples packed together (mono, 16-bit PCM). Sample rate does
      *                  not matter, since we are not rendering any time-related information yet.
      */
     fun setData(intArray: IntArray) {
-        val points = calculatePoints(intArray, width, height, DEFAULT_STEP_COUNT)
-        val initPath = Path()
-        initPath.moveTo(0F, height / 2.0f)
-        initPath.lineTo(width.toFloat(), height / 2.0f)
-        waveform = Path()
-        waveform.addPath(initPath)
-        indexOfDrawnPoints = 0
-        animator.apply {
-            addUpdateListener { animation ->
-                val phase = animation.animatedValue as Float
-                render(points, phase)
-            }
-        }
-        animator.start()
+        rawData = intArray
+        render()
+
     }
 }

@@ -8,23 +8,33 @@ import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.util.AttributeSet
-import android.view.View
 
-class PlaybackIndicator(context: Context, attrs: AttributeSet) : View(context, attrs) {
+class PlaybackIndicator(context: Context, attrs: AttributeSet) : CustomView(context, attrs) {
 
     companion object {
         const val TAG = "PlaybackIndicator"
-        const val LEFT_RIGHT_PADDING = 10.0f
-        const val BORDER_WIDTH = 10.0f
+        const val PADDING = 10.0f
+        const val BORDER_WIDTH_SCALE = 0.4f
+        const val BLOOM_WIDTH_SCALE = 0.4f
+        const val DEFAULT_INNER_COLOR_ON_FIRST = "#FF0000"
+        const val DEFAULT_INNER_COLOR_ON_SECOND = "#9e0000"
+        const val DEFAULT_INNER_COLOR_OFF_FIRST = "#6e0101"
+        const val DEFAULT_INNER_COLOR_OFF_SECOND = "#4a0000"
     }
 
-    private var isPlaying = false
-    private val innerColorOn: Int = Color.parseColor("#FF0000")
-    private val innerColorOff: Int = Color.parseColor("#650000")
+    private val innerColorOnFirst: Int = Color.parseColor(DEFAULT_INNER_COLOR_ON_FIRST)
+    private val innerColorOnSecond: Int = Color.parseColor(DEFAULT_INNER_COLOR_ON_SECOND)
+    private val innerColorOffFirst: Int = Color.parseColor(DEFAULT_INNER_COLOR_OFF_FIRST)
+    private val innerColorOffSecond: Int = Color.parseColor(DEFAULT_INNER_COLOR_OFF_SECOND)
     private val innerPaintOff = Paint()
     private val innerPaintOn = Paint()
     private val borderPaint = Paint()
     private val bloomPaint = Paint()
+
+    private var isPlaying = false
+    private var center = 0f
+    private var circleRadius = 0f
+    private var bloomRadius = 0f
 
     init {
         initInnerPaint()
@@ -33,19 +43,17 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : View(context, a
     }
 
     private fun initInnerPaint() {
-        innerPaintOff.color = innerColorOff
+        innerPaintOn.color = innerColorOnFirst
+        innerPaintOff.color = innerColorOffFirst
     }
 
     private fun initBloomPaint() {
         bloomPaint.isAntiAlias = true
         bloomPaint.color = Color.RED
-        val blurMask = BlurMaskFilter(25f, BlurMaskFilter.Blur.NORMAL)
-        bloomPaint.maskFilter = blurMask
     }
 
     private fun initBorderPaint() {
         borderPaint.style = Paint.Style.STROKE
-        borderPaint.strokeWidth = 10f
         borderPaint.isAntiAlias = true
         borderPaint.color = Color.WHITE
     }
@@ -54,7 +62,6 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : View(context, a
     // override onMeasure to make the view square
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-
         setMeasuredDimension(widthMeasureSpec, widthMeasureSpec)
 
     }
@@ -62,18 +69,44 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : View(context, a
     // override onDraw to light indicator depending on audio playback state
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val center = width / 2f
-        val radius = center - 50f
         if (isPlaying) {
-            canvas.drawCircle(center, center, radius, bloomPaint)
-            canvas.drawCircle(center, center, radius-10f, borderPaint)
-            canvas.drawCircle(center, center, radius-10f, innerPaintOn)
+            canvas.drawCircle(center, center, bloomRadius, bloomPaint)
+            canvas.drawCircle(center, center, circleRadius, borderPaint)
+            canvas.drawCircle(center, center, circleRadius, innerPaintOn)
         } else {
-            canvas.drawCircle(center, center, radius-10f, borderPaint)
-            canvas.drawCircle(center, center, radius-10f, innerPaintOff)
+            canvas.drawCircle(center, center, circleRadius, borderPaint)
+            canvas.drawCircle(center, center, circleRadius, innerPaintOff)
         }
+    }
 
+    override fun render() {
+        // pre-condition check
+        if (width==0 || height==0) {
+            return
+        }
+        center = width / 2f
+        bloomRadius = center - PADDING
+        circleRadius = bloomRadius - (BLOOM_WIDTH_SCALE * bloomRadius)
+        borderPaint.strokeWidth = BORDER_WIDTH_SCALE * circleRadius
+        val blurMask = BlurMaskFilter(BLOOM_WIDTH_SCALE * bloomRadius, BlurMaskFilter.Blur.NORMAL)
+        val gradientOff = RadialGradient(
+            center, center, circleRadius,
+            innerColorOffFirst, innerColorOffSecond,
+            Shader.TileMode.CLAMP
+        )
+        val gradientOn = RadialGradient(
+            center, center, circleRadius,
+            innerColorOnFirst, innerColorOnSecond,
+            Shader.TileMode.CLAMP
+        )
+        bloomPaint.maskFilter = blurMask
+        innerPaintOn.shader = gradientOn
+        innerPaintOff.shader = gradientOff
+        invalidate()
+    }
 
+    override fun setAnimation(animationValue: Float) {
+        // nothing to animate currently
     }
 
     /**
@@ -82,16 +115,6 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : View(context, a
      */
     fun setData(isPlaying: Boolean) {
         this.isPlaying = isPlaying
-        // Initialize gradient color for on state
-        val center = width / 2f
-        val radius = center - 50f
-        if (radius <= 0) return
-        val gradient = RadialGradient(
-            center, center, radius,
-            innerColorOn, innerColorOff,
-            Shader.TileMode.CLAMP
-        )
-        innerPaintOn.shader = gradient
-        invalidate()
+        render()
     }
 }

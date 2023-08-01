@@ -78,7 +78,7 @@ class MainViewModel @Inject constructor(
         if (_waveformData.value == null) return
 
         val waveformLength = _waveformData.value!!.size
-        val progress = TimeConverter.millisecondsToProgress(_timestamp.value!!, _duration.value!!.toInt())
+        val progress = TimeConverter.millisecondsToProgress(_timestamp.value!!, _duration.value!!)
          val index = (waveformLength.toFloat() * progress.toFloat() / TimeConverter.MAX_PROGRESS_VALUE).toInt() - 1
         if (index < 0) return
         _currentWaveformIndex.value = index
