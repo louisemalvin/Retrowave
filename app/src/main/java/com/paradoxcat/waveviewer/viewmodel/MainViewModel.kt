@@ -272,30 +272,27 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * Sets media player to play state if it is not playing.
+     * Sets media player to play or pause state.
      */
-    fun play() {
-        // pre-condition check:
-        if (mediaPlayer.isPlaying) {
+    fun togglePlayPause() {
+        if (!mediaPlayer.isPlaying) {
+            mediaPlayer.start()
+            _isPlaying.value = mediaPlayer.isPlaying
+            updatePlayLoop()
             return
         }
-
-        mediaPlayer.start()
+        mediaPlayer.pause()
         _isPlaying.value = mediaPlayer.isPlaying
-        updatePlayLoop()
     }
 
     /**
      * Sets media player to pause state if it is playing.
      */
-    fun pause() {
-        // pre-condition check:
-        if (!mediaPlayer.isPlaying) {
-            return
-        }
-
+    fun stop() {
         mediaPlayer.pause()
+        seekTo(0L)
         _isPlaying.value = mediaPlayer.isPlaying
+
     }
 
     /**

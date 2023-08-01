@@ -19,6 +19,12 @@ object TimeConverter {
      * @param totalMilliseconds total duration of the audio file
      */
     fun millisecondsToProgress(currentMilliseconds: Long, totalMilliseconds: Long): Int {
+        // pre-condition check
+        // avoid division by zero
+        if (totalMilliseconds == 0L) {
+            return 0
+        }
+
         return (currentMilliseconds * MAX_PROGRESS_VALUE / totalMilliseconds).toInt()
     }
 

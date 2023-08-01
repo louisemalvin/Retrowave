@@ -25,7 +25,8 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
         private const val LEFT_RIGHT_PADDING = 45.0f
         private const val TOP_BOTTOM_PADDING = 50.0f
         const val LINE_WIDTH = 1.0f // thickness of the waveform line
-        const val DEFAULT_STEP_COUNT = 2000 // how many samples to skip when drawing the waveform
+        const val DEFAULT_STEP_COUNT = 1 // how many samples to skip when drawing the waveform
+        const val DEFAULT_MAX_LINES = 5000 // how many lines to draw
         const val ANIMATION_DURATION = 1000L // duration of the drawing in milliseconds
         const val ANIMATION_START_PERCENTAGE = 0.0f
         const val ANIMATION_END_PERCENTAGE = 1.0f
@@ -106,6 +107,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
     private val linePaint = Paint()
 
     private var indexOfDrawnPoints: Int = 0
+    private var stepCount = DEFAULT_STEP_COUNT
 
     init {
         initLinePaint()
@@ -144,7 +146,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
         waveform = Path()
         waveform.moveTo(0F, height / 2.0f)
         waveform.lineTo(width.toFloat(), height / 2.0f)
-        points = calculatePoints(rawData, width, height, DEFAULT_STEP_COUNT)
+        points = calculatePoints(rawData, width, height, stepCount)
         indexOfDrawnPoints = 0
         animator.start()
     }
@@ -167,6 +169,9 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
      * @param intArray -- converted audio buffer
      */
     fun setData(intArray: IntArray) {
+        if (intArray.size > DEFAULT_MAX_LINES) {
+            stepCount = intArray.size / DEFAULT_MAX_LINES
+        }
         rawData = intArray
         render()
     }

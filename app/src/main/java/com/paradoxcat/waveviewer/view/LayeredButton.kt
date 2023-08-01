@@ -186,10 +186,10 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
             maxHeight
         }
         // calculate end height after the press
-        val scaleFactor = currentMaxHeight - (pressScaleFactor * currentMaxHeight)
+        val scaleFactor = currentHeight - (pressScaleFactor * currentMaxHeight)
         // animate to the new height, duration depends on the press factor
         val animator = getAnimator(currentHeight, scaleFactor, currentMaxHeight)
-        animator.duration = (ANIMATION_DURATION * pressScaleFactor).toLong()
+        animator.duration = ANIMATION_DURATION
         animator.interpolator = AccelerateDecelerateInterpolator()
         animator.start()
     }

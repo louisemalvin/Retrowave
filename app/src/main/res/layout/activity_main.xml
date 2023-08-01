@@ -149,10 +149,10 @@
         tools:layout_editor_absoluteX="112dp">
 
         <com.paradoxcat.waveviewer.view.LayeredButton
-            android:id="@+id/loadButton"
+            android:id="@+id/stopButton"
             style="@style/layeredButton.primary"
             android:layout_marginEnd="4dp"
-            app:icon="@drawable/ic_load_song"
+            app:icon="@drawable/ic_stop_button"
             app:layout_constraintEnd_toStartOf="@+id/playButton"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -165,10 +165,10 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.paradoxcat.waveviewer.view.LayeredButton
-            android:id="@+id/pauseButton"
+            android:id="@+id/loadButton"
             style="@style/layeredButton.tertiary"
             android:layout_marginStart="4dp"
-            app:icon="@drawable/ic_pause_button"
+            app:icon="@drawable/ic_load_button"
             app:layout_constraintStart_toEndOf="@+id/playButton"
             app:layout_constraintTop_toTopOf="parent" />
 

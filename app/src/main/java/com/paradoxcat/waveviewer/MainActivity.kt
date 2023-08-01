@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.paradoxcat.waveviewer.databinding.ActivityMainBinding
 import com.paradoxcat.waveviewer.util.TimeConverter.getFormattedTime
 import com.paradoxcat.waveviewer.util.TimeConverter.millisecondsToProgress
@@ -17,6 +18,7 @@ import com.paradoxcat.waveviewer.util.TimeConverter.progressToMilliseconds
 import com.paradoxcat.waveviewer.view.WaveformSlideBar
 import com.paradoxcat.waveviewer.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 
@@ -61,24 +63,24 @@ class MainActivity : AppCompatActivity() {
         // load button listener
         _binding.loadButton.setOnClickListener {
             mainViewModel.setMedia()
+            _binding.loadButton.press(false)
 //            getContent.launch("audio/wav")
         }
 
         // play button listener
         _binding.playButton.setOnClickListener {
-            mainViewModel.play()
+            mainViewModel.togglePlayPause()
             // get lock state, if media is playing, keep the button pressed
             val currentPlayState = mainViewModel.isPlaying.value!!
             // animate button press
             _binding.playButton.press(currentPlayState)
-
         }
 
-        // pause button listener
-        _binding.pauseButton.setOnClickListener {
-            mainViewModel.pause()
+        // stop button listener
+        _binding.stopButton.setOnClickListener {
+            mainViewModel.stop()
             // animate button press
-            _binding.pauseButton.press(false)
+            _binding.stopButton.press(false)
         }
 
         // Seekbar listener
@@ -122,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         mainViewModel.isPlaying.observe(this) { isPlaying ->
             // update playback indicator & play button lock state
             _binding.playbackIndicatorView.setData(isPlaying)
-            _binding.playButton.press(isPlaying)
+            _binding.playButton.press(0.0f, isPlaying)
         }
 
         // timestamp observer
@@ -133,10 +135,13 @@ class MainActivity : AppCompatActivity() {
             _binding.playbackSeekBar.progress = millisecondsToProgress(timestamp, duration!!)
         }
 
-        // waveform data observer
-        mainViewModel.waveformData.observe(this) { waveformData ->
-            _binding.waveformView.setData(waveformData)
+        lifecycleScope.launch {
+            // waveform data observer
+            mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
+                _binding.waveformView.setData(waveformData)
+            }
         }
+
 
         // current waveform index observer
         mainViewModel.currentWaveform.observe(this) { currentWaveform ->
@@ -144,7 +149,7 @@ class MainActivity : AppCompatActivity() {
             if (currentWaveform >= mainViewModel.waveformData.value!!.size) {
                 return@observe
             }
-            
+
             val waveform = mainViewModel.waveformData.value!![currentWaveform]
             val pressScaleFactor = abs(waveform)
             if (pressScaleFactor in 5000..10000) {
@@ -154,7 +159,7 @@ class MainActivity : AppCompatActivity() {
                 val isPlaying = mainViewModel.isPlaying.value!!
                 _binding.playButton.press(pressScaleFactor / 10000f, isPlaying)
             } else {
-                _binding.pauseButton.press(pressScaleFactor / WaveformSlideBar.MAX_VALUE, false)
+                _binding.stopButton.press(pressScaleFactor / WaveformSlideBar.MAX_VALUE, false)
             }
         }
 
