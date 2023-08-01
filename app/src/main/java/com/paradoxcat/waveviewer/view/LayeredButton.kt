@@ -118,7 +118,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
         topRect = RectF(0f, 0f, width.toFloat(), height.toFloat() - currentHeight)
         bottomRect = RectF(
             0f,
-            height.toFloat() - maxHeight - cornerRadius,
+            height.toFloat() - maxHeight - 2 * cornerRadius,
             width.toFloat(),
             height.toFloat()
         )

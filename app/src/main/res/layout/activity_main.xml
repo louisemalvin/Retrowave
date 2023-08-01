@@ -140,6 +140,7 @@
     </LinearLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -148,35 +149,28 @@
         tools:layout_editor_absoluteX="112dp">
 
         <com.paradoxcat.waveviewer.view.LayeredButton
-            android:id="@+id/playButton"
-            android:layout_width="117dp"
-            android:layout_height="80dp"
-            app:bottomLayerColor="@color/dark_red"
-            app:icon="@drawable/ic_play_pause"
-            app:layout_constraintEnd_toStartOf="@+id/rewindButton"
-            app:layout_constraintTop_toTopOf="parent"
-            app:topLayerColor="@color/red" />
+            android:id="@+id/loadButton"
+            style="@style/layeredButton.primary"
+            android:layout_marginEnd="4dp"
+            app:icon="@drawable/ic_load_song"
+            app:layout_constraintEnd_toStartOf="@+id/playButton"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <com.paradoxcat.waveviewer.view.LayeredButton
-            android:id="@+id/rewindButton"
-            android:layout_width="117dp"
-            android:layout_height="80dp"
-            app:bottomLayerColor="@color/teal_700"
-            app:icon="@drawable/ic_logo"
+            android:id="@+id/playButton"
+            style="@style/layeredButton.secondary"
+            app:icon="@drawable/ic_play_button"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:topLayerColor="@color/teal_200" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <com.paradoxcat.waveviewer.view.LayeredButton
-            android:id="@+id/settingsButton"
-            android:layout_width="117dp"
-            android:layout_height="80dp"
-            app:bottomLayerColor="@color/purple_700"
-            app:icon="@drawable/ic_settings"
-            app:layout_constraintStart_toEndOf="@+id/rewindButton"
-            app:layout_constraintTop_toTopOf="parent"
-            app:topLayerColor="@color/purple_500" />
+            android:id="@+id/pauseButton"
+            style="@style/layeredButton.tertiary"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_pause_button"
+            app:layout_constraintStart_toEndOf="@+id/playButton"
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

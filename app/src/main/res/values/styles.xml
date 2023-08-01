@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:app="http://schemas.android.com/apk/res-auto">
     <style name="app_title">
         <item name="android:fontFamily">@font/koulen</item>
         <item name="android:textSize">25sp</item>
@@ -23,5 +23,23 @@
         <item name="android:fontFamily">@font/aubrey</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/white</item>
+    </style>
+    <style name="layeredButton">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">90dp</item>
+        <item name="heightDifference">20dp</item>
+        <item name="cornerRadius">15dp</item>
+    </style>
+    <style name="layeredButton.primary">
+        <item name="topLayerColor">@color/red</item>
+        <item name="bottomLayerColor">@color/dark_red</item>
+    </style>
+    <style name="layeredButton.secondary">
+        <item name="topLayerColor">@color/blue</item>
+        <item name="bottomLayerColor">@color/dark_blue</item>
+    </style>
+    <style name="layeredButton.tertiary">
+        <item name="topLayerColor">@color/yellow</item>
+        <item name="bottomLayerColor">@color/dark_yellow</item>
     </style>
 </resources>
