@@ -162,6 +162,13 @@ class MainViewModel @Inject constructor(
         _waveformData.value = transformRawData(rawAudioBuffer)
     }
 
+    /**
+     * Converts raw audio data to an array of integers.
+     *
+     * Raw audio buffer must be 16-bit samples packed together (mono, 16-bit PCM).
+     * All functionality assumes that provided data has only 1 channel, 44100 Hz sample rate,
+     * 16-bits per sample, and is already without WAV header.
+     */
     private fun transformRawData(buffer: ByteBuffer): IntArray {
         val nSamples = buffer.limit() / 2 // assuming 16-bit PCM mono
         val waveform = IntArray(nSamples)

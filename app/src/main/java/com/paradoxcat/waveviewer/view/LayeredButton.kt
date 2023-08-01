@@ -9,7 +9,6 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
-import android.util.Log
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import com.paradoxcat.waveviewer.R
@@ -19,13 +18,13 @@ import kotlin.math.ceil
  * Modular layered-button view for 3d touch-like interaction.
  *
  * Additional customization is done through XML attributes.
- * See the XML resource file for more details.
+ * See attributes resource file for more details.
  */
 class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context, attrs) {
 
     companion object {
         const val TAG = "LayeredButton"
-        const val DEFAULT_MAX_HEIGHT_DIFFERENCE = 50f
+        const val DEFAULT_MAX_HEIGHT_DIFFERENCE = 50f // default attribute values
         const val DEFAULT_CORNER_RADIUS = 10f
         const val DEFAULT_LOCKED_HEIGHT_SCALE_FACTOR = 0.5f
         const val DEFAULT_TOP_LAYER_COLOR = "#FF0000"
@@ -91,31 +90,31 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
     }
 
     override fun onDraw(canvas: Canvas?) {
+        // pre-condition check
         if (!this::topRect.isInitialized) {
             return
         }
+
         super.onDraw(canvas)
         canvas?.drawRoundRect(
             bottomRect,
-            DEFAULT_CORNER_RADIUS,
-            DEFAULT_CORNER_RADIUS,
+            cornerRadius,
+            cornerRadius,
             bottomLayerPaint
         )
         canvas?.drawRoundRect(
             topRect,
-            DEFAULT_CORNER_RADIUS,
-            DEFAULT_CORNER_RADIUS,
+            cornerRadius,
+            cornerRadius,
             topLayerPaint
         )
+        // draw icon if it is available
         icon?.draw(canvas ?: return)
     }
 
     override fun render() {
-        // pre-condition check
-        if (width==0 || height==0) {
-            return
-        }
-        // initialize how the buttons should look like
+        super.render()
+        // calculate the shape of the top and bottom layer
         topRect = RectF(0f, 0f, width.toFloat(), height.toFloat() - currentHeight)
         bottomRect = RectF(
             0f,
@@ -123,28 +122,24 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
             width.toFloat(),
             height.toFloat()
         )
-        // adjust icon bounds to the center of the top layer
+        // adjust icon position to the center of the top layer
         icon?.bounds = createIconBounds(topRect, icon!!)
         invalidate()
     }
 
-    @Suppress("unused")
     override fun setAnimation(animationValue: Float) {
         var newHeight = animationValue
         // pre-condition checks
         // button could not be pushed lower than bottom layer
         if (animationValue < 0) {
-            Log.e(TAG, "Set height < 0.")
-            throw IllegalArgumentException("Height < 0")
+            newHeight = 0f
         }
         // button can only be pushed up to the default value
         if (animationValue > maxHeight) {
-            Log.w(TAG, "Set height > maximum allowed.")
             newHeight = currentMaxHeight
         }
         // return if height is the same
         if (newHeight==this.currentHeight) {
-            Log.i(TAG, "Set height is the same as current. Skipping.")
             return
         }
 
@@ -161,19 +156,20 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
     }
 
     private fun createIconBounds(topRect: RectF, icon: Drawable): Rect {
+        // calculate icon sizes
         val iconWidth = icon.intrinsicWidth
         val iconHeight = icon.intrinsicHeight
-
+        // calculate icon position to the center of the top layer
         val iconLeft = ceil((topRect.centerX() - iconWidth / 2)).toInt()
         val iconTop = ceil((topRect.centerY() - iconHeight / 2)).toInt()
         val iconRight = iconLeft + iconWidth
         val iconBottom = iconTop + iconHeight
-
         return Rect(iconLeft, iconTop, iconRight, iconBottom)
     }
 
     fun setData(heightDifference: Float) {
-        val animator = getAnimator(currentHeight, heightDifference, currentMaxHeight)
+        val scaleFactor = currentMaxHeight - (heightDifference * currentMaxHeight * 2f)
+        val animator = getAnimator(currentHeight, scaleFactor, currentMaxHeight)
         animator.duration = 500
         animator.interpolator = AccelerateDecelerateInterpolator()
         animator.start()

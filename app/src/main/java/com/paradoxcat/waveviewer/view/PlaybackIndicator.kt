@@ -9,17 +9,22 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.util.AttributeSet
 
+/**
+ * Custom view to indicate audio playback.
+ */
 class PlaybackIndicator(context: Context, attrs: AttributeSet) : CustomView(context, attrs) {
 
     companion object {
         const val TAG = "PlaybackIndicator"
         const val PADDING = 10.0f
-        const val BORDER_WIDTH_SCALE = 0.4f
-        const val BLOOM_WIDTH_SCALE = 0.4f
-        const val DEFAULT_INNER_COLOR_ON_FIRST = "#FF0000"
-        const val DEFAULT_INNER_COLOR_ON_SECOND = "#9e0000"
-        const val DEFAULT_INNER_COLOR_OFF_FIRST = "#6e0101"
-        const val DEFAULT_INNER_COLOR_OFF_SECOND = "#4a0000"
+        const val BORDER_WIDTH_SCALE = 0.4f // percentage scale of light border
+        const val BLOOM_WIDTH_SCALE = 0.6f // percentage scale of bloom
+        const val DEFAULT_INNER_COLOR_ON_FIRST = "#FF0000" // ON state first gradient color
+        const val DEFAULT_INNER_COLOR_ON_SECOND = "#9e0000" // ON state second gradient color
+        const val DEFAULT_INNER_COLOR_OFF_FIRST = "#6e0101" // OFF state first gradient color
+        const val DEFAULT_INNER_COLOR_OFF_SECOND = "#4a0000" // OFF state second gradient color
+        const val DEFAULT_BORDER_COLOR = "#FFFFFF"
+        const val DEFAULT_BLOOM_COLOR = "#6e0101"
     }
 
     private val innerColorOnFirst: Int = Color.parseColor(DEFAULT_INNER_COLOR_ON_FIRST)
@@ -49,24 +54,22 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : CustomView(cont
 
     private fun initBloomPaint() {
         bloomPaint.isAntiAlias = true
-        bloomPaint.color = Color.RED
+        bloomPaint.color = Color.parseColor(DEFAULT_BLOOM_COLOR)
     }
 
     private fun initBorderPaint() {
         borderPaint.style = Paint.Style.STROKE
         borderPaint.isAntiAlias = true
-        borderPaint.color = Color.WHITE
+        borderPaint.color = Color.parseColor(DEFAULT_BORDER_COLOR)
     }
 
-
-    // override onMeasure to make the view square
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // make the view a square
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         setMeasuredDimension(widthMeasureSpec, widthMeasureSpec)
 
     }
 
-    // override onDraw to light indicator depending on audio playback state
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (isPlaying) {
@@ -80,15 +83,17 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : CustomView(cont
     }
 
     override fun render() {
-        // pre-condition check
-        if (width==0 || height==0) {
-            return
-        }
+        super.render()
+        // calculate center coordinate
         center = width / 2f
+        // calculate bloom and circle radius
         bloomRadius = center - PADDING
         circleRadius = bloomRadius - (BLOOM_WIDTH_SCALE * bloomRadius)
+        // set border size, gradient color, and blur mask according to values above
         borderPaint.strokeWidth = BORDER_WIDTH_SCALE * circleRadius
-        val blurMask = BlurMaskFilter(BLOOM_WIDTH_SCALE * bloomRadius, BlurMaskFilter.Blur.NORMAL)
+        val blurMask = BlurMaskFilter(
+            BLOOM_WIDTH_SCALE * bloomRadius,
+            BlurMaskFilter.Blur.NORMAL)
         val gradientOff = RadialGradient(
             center, center, circleRadius,
             innerColorOffFirst, innerColorOffSecond,

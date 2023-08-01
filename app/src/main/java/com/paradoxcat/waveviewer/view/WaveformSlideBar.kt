@@ -13,9 +13,10 @@ import kotlin.math.floor
 import kotlin.math.pow
 
 /**
- * Draws a straight line from the middle to samples points.
- * All functionality assumes that provided data has only 1 channel, 44100 Hz sample rate, 16-bits per sample, and is
- * already without WAV header.
+ * Custom view to draw the waveform pattern of an audio file.
+ *
+ * Array value determines the height (y) of the waveform, while
+ * the array length determines the width (x) of the waveform.
  */
 class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(context, attrs) {
 
@@ -23,9 +24,9 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
         const val TAG = "WaveformSlideBar"
         private const val LEFT_RIGHT_PADDING = 45.0f
         private const val TOP_BOTTOM_PADDING = 50.0f
-        const val LINE_WIDTH = 1.0f
-        const val DEFAULT_STEP_COUNT = 1000
-        const val ANIMATION_DURATION = 2000L
+        const val LINE_WIDTH = 1.0f // thickness of the waveform line
+        const val DEFAULT_STEP_COUNT = 2000 // how many samples to skip when drawing the waveform
+        const val ANIMATION_DURATION = 1000L // duration of the drawing in milliseconds
         const val ANIMATION_START_PERCENTAGE = 0.0f
         const val ANIMATION_END_PERCENTAGE = 1.0f
         val MAX_VALUE = 2.0f.pow(16.0f) - 1 // max 16-bit value
@@ -45,12 +46,10 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
             stepCount: Int
         ): Array<Point> {
             var result = arrayOf<Point>()
-            val sampleDistance =
-                (width - LEFT_RIGHT_PADDING * 2) / (waveform.size - 1) // distance between centers of 2 samples
-            val maxAmplitude =
-                height / 2.0f - TOP_BOTTOM_PADDING // max amount of px from middle to the edge minus pad
-            val amplitudeScaleFactor =
-                INV_MAX_VALUE * maxAmplitude // multiply by this to get number of px from middle
+            // calculate distance between samples and and maximum amplitude length
+            val sampleDistance = (width - LEFT_RIGHT_PADDING * 2) / (waveform.size - 1)
+            val maxAmplitude = height / 2.0f - TOP_BOTTOM_PADDING
+            val amplitudeScaleFactor = INV_MAX_VALUE * maxAmplitude
 
             // calculate points for drawLines()
             for (i in waveform.indices step stepCount) {
@@ -72,7 +71,9 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
          */
         fun getPathChunk(points: Array<Point>, startIndex: Int, endIndex: Int): Path {
             // pre-condition check
-            if (endIndex - startIndex <= 1 || points.isEmpty() || startIndex < 0 || endIndex >= points.size) {
+            if (endIndex - startIndex <= 1 || points.isEmpty() || startIndex < 0
+                || endIndex >= points.size
+            ) {
                 return Path()
             }
             val result = Path()
@@ -119,23 +120,23 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
     }
 
     private fun initAnimator() {
-        animator = getAnimator( ANIMATION_START_PERCENTAGE, ANIMATION_END_PERCENTAGE)
+        animator = getAnimator(ANIMATION_START_PERCENTAGE, ANIMATION_END_PERCENTAGE)
         animator.interpolator = AccelerateDecelerateInterpolator()
         animator.duration = ANIMATION_DURATION
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        if (::waveform.isInitialized) {
-            canvas?.drawPath(waveform, linePaint)
+        // pre-condition check
+        if (!::waveform.isInitialized) {
+            return
         }
+
+        canvas?.drawPath(waveform, linePaint)
     }
 
     override fun render() {
-        // pre-condition check
-        if (width==0 || height==0) {
-            return
-        }
+        super.render()
         waveform = Path()
         waveform.moveTo(0F, height / 2.0f)
         waveform.lineTo(width.toFloat(), height / 2.0f)
@@ -145,20 +146,24 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
     }
 
     override fun setAnimation(animationValue: Float) {
+        // get next index to draw depending on current animation value
         val nextDrawIndex: Int = floor(points.size * animationValue).toInt() - 1
-        waveform.addPath(getPathChunk(points, indexOfDrawnPoints, nextDrawIndex))
+        // get next path chunk to draw [last drawn index] to [next draw index]
+        val nextChunk = getPathChunk(points, indexOfDrawnPoints, nextDrawIndex)
+        // add to waveform buffer
+        waveform.addPath(nextChunk)
+        // update index of last drawn point
         indexOfDrawnPoints = nextDrawIndex
         invalidate()
     }
 
     /**
-     * Set raw audio data and draw it.
-     * @param buffer -- raw audio buffer must be 16-bit samples packed together (mono, 16-bit PCM). Sample rate does
-     *                  not matter, since we are not rendering any time-related information yet.
+     * Set the transformed audio data to be drawn.
+     *
+     * @param intArray -- converted audio buffer
      */
     fun setData(intArray: IntArray) {
         rawData = intArray
         render()
-
     }
 }
