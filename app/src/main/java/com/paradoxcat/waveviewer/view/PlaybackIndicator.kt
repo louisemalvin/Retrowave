@@ -71,6 +71,11 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : CustomView(cont
     }
 
     override fun onDraw(canvas: Canvas) {
+        // pre-condition check:
+        if (width==0 || height==0) {
+            return
+        }
+
         super.onDraw(canvas)
         if (isPlaying) {
             canvas.drawCircle(center, center, bloomRadius, bloomPaint)
@@ -83,7 +88,11 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : CustomView(cont
     }
 
     override fun render() {
-        super.render()
+        // pre-condition check:
+        if (width==0 || height==0) {
+            return
+        }
+
         // calculate center coordinate
         center = width / 2f
         // calculate bloom and circle radius
@@ -116,6 +125,7 @@ class PlaybackIndicator(context: Context, attrs: AttributeSet) : CustomView(cont
 
     /**
      * Turn the light on if audio is playing.
+     *
      * @param isPlaying true if audio is playing, false otherwise
      */
     fun setData(isPlaying: Boolean) {

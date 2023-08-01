@@ -1,9 +1,13 @@
 package com.paradoxcat.waveviewer
 
-import android.media.AudioFormat
+import android.content.ContentResolver
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.SeekBar
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.paradoxcat.waveviewer.databinding.ActivityMainBinding
@@ -15,134 +19,158 @@ import com.paradoxcat.waveviewer.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
 
+
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     companion object {
-
         const val TAG = "MainActivity"
-
-        // A real gravitational wave from https://www.gw-openscience.org/audio/
-        // It was a GW150914 binary black hole merger event that LIGO has detected,
-        // waveform template derived from GR, whitened, frequency shifted +400 Hz
-//         const val EXAMPLE_AUDIO_FILE_NAME = "gravitational_wave_mono_44100Hz_16bit.wav"
-//        const val EXAMPLE_AUDIO_FILE_NAME = "whistle_mono_44100Hz_16bit.wav"
-
-                const val EXAMPLE_AUDIO_FILE_NAME = "music_mono_44100Hz_16bit.wav"
-        const val EXPECTED_NUM_CHANNELS = 1
-        const val EXPECTED_SAMPLE_RATE = 44100
-        const val EXPECTED_AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
     }
 
     private lateinit var _binding: ActivityMainBinding
+
+    private val mainViewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(_binding.root)
-        val mainViewModel: MainViewModel by viewModels()
-        val assetFileDescriptor = assets.openFd(EXAMPLE_AUDIO_FILE_NAME)
 
-//        // Set default audio to play
-//        _binding.loadFile.setOnClickListener {
-//            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-//                type = "audio/wav"
-//                startActivityForResult(this, 0)
-//            }
-//        }
-
-        _binding.rewindButton.setOnClickListener {
-            _binding.rewindButton.setData(false)
-        }
-
-        _binding.settingsButton.setOnClickListener {
-            _binding.settingsButton.setData(false)
-        }
-
-        _binding.playButton.setOnClickListener {
-            mainViewModel.togglePlayPause()
-            _binding.playButton.setData(true)
-        }
-
-
-        mainViewModel.setMedia(assetFileDescriptor, EXAMPLE_AUDIO_FILE_NAME)
-
-        // SeekBar listener when user drags the thumb
-        _binding.playbackSeekBar.setOnSeekBarChangeListener(object :
-            SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    Log.i(
-                        TAG,
-                        "User input progress: $progress, ms: ${
-                            progressToMilliseconds(
-                                mainViewModel.duration.value!!,
-                                progress
-                            )
-                        }"
-                    )
-                    // Update the media player
-                    mainViewModel.duration.observe(this@MainActivity) { duration ->
-                        mainViewModel.seekTo(progressToMilliseconds(duration, progress))
-                    }
-                    // Update the timestamp
-                    mainViewModel.updateTimestamp()
+        val getContent =
+            registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+                if (uri==null) {
+                    return@registerForActivityResult
                 }
+                try {
+                    val fileName = queryName(this.contentResolver, uri)
+                    val assetFileDescriptor = this.contentResolver.openAssetFileDescriptor(uri, "r")
+                    if (assetFileDescriptor==null && fileName==null) {
+                        return@registerForActivityResult
+                    }
+                    mainViewModel.setMedia(assetFileDescriptor!!, fileName!!)
+                    assetFileDescriptor.close()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error loading file", e)
+                    Toast.makeText(this, "Error loading file", Toast.LENGTH_SHORT).show()
+                }
+
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar) {
-            }
+        /* Listeners */
 
-            override fun onStopTrackingTouch(seekBar: SeekBar) {
-            }
-        })
+        // load button listener
+        _binding.loadButton.setOnClickListener {
+            mainViewModel.setMedia()
+//            getContent.launch("audio/wav")
+        }
 
-        // observers
+        // play button listener
+        _binding.playButton.setOnClickListener {
+            mainViewModel.play()
+            // get lock state, if media is playing, keep the button pressed
+            val currentPlayState = mainViewModel.isPlaying.value!!
+            // animate button press
+            _binding.playButton.press(currentPlayState)
+
+        }
+
+        // pause button listener
+        _binding.pauseButton.setOnClickListener {
+            mainViewModel.pause()
+            // animate button press
+            _binding.pauseButton.press(false)
+        }
+
+        // Seekbar listener
+        _binding.playbackSeekBar.setOnSeekBarChangeListener(
+            object :
+                SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    // pre-condition check
+                    // only update if seekbar is changed by user
+                    if (!fromUser) {
+                        return
+                    }
+
+                    val totalDuration = mainViewModel.duration.value!!
+                    // update the media player
+                    mainViewModel.seekTo(progressToMilliseconds(totalDuration, progress))
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar) {
+                    // nothing to track currently
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    // nothing to track currently
+                }
+            })
+
+        /* Observers */
+
+        // title name observer
         mainViewModel.title.observe(this) { title ->
             _binding.titleTextView.text = title
         }
-        mainViewModel.timestamp.observe(this) { timestamp ->
-            _binding.timestampTextView.text = getFormattedTime(timestamp)
-            // update seekbar position as well
-            val duration = mainViewModel.duration.value
-            _binding.playbackSeekBar.progress = millisecondsToProgress(timestamp, duration!!)
-            Log.d(TAG, "timestamp: $timestamp, duration: $duration seekbar progress = ${_binding.playbackSeekBar.progress}")
-        }
-        mainViewModel.isPlaying.observe(this) { isPlaying ->
-            _binding.playbackIndicatorView.setData(isPlaying)
-            if (!isPlaying) {
-                _binding.playButton.setData()
-            }
-        }
+
+        // total audio duration observer
         mainViewModel.duration.observe(this) { duration ->
             _binding.durationTextView.text = getFormattedTime(duration)
         }
 
-        mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
+        // audio playback state observer
+        mainViewModel.isPlaying.observe(this) { isPlaying ->
+            // update playback indicator & play button lock state
+            _binding.playbackIndicatorView.setData(isPlaying)
+            _binding.playButton.press(isPlaying)
+        }
+
+        // timestamp observer
+        mainViewModel.timestamp.observe(this) { timestamp ->
+            // update timestamp & seekbar progress
+            _binding.timestampTextView.text = getFormattedTime(timestamp)
+            val duration = mainViewModel.duration.value
+            _binding.playbackSeekBar.progress = millisecondsToProgress(timestamp, duration!!)
+        }
+
+        // waveform data observer
+        mainViewModel.waveformData.observe(this) { waveformData ->
             _binding.waveformView.setData(waveformData)
         }
 
+        // current waveform index observer
         mainViewModel.currentWaveform.observe(this) { currentWaveform ->
-            mainViewModel.waveformData.value?.let { waveformData ->
-                val waveform = abs(waveformData[currentWaveform])
-                if (waveform in 5000..10000) {
-                    val percent = waveform / WaveformSlideBar.MAX_VALUE
-                    _binding.playButton.setData(percent)
-                    Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
-                }
-                if (waveform in 10000..15000) {
-                    val percent = waveform / WaveformSlideBar.MAX_VALUE
-                    _binding.rewindButton.setData(percent)
-                    Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
-                }
-                if (waveform in 15001..WaveformSlideBar.MAX_VALUE.toInt()) {
-                    val percent = waveform / WaveformSlideBar.MAX_VALUE
-                    _binding.settingsButton.setData(percent)
-                    Log.i(TAG, "waveformIndex: $currentWaveform percent: $percent")
-                }
-
-
+            // pre-condition check
+            if (currentWaveform >= mainViewModel.waveformData.value!!.size) {
+                return@observe
+            }
+            
+            val waveform = mainViewModel.waveformData.value!![currentWaveform]
+            val pressScaleFactor = abs(waveform)
+            if (pressScaleFactor in 5000..10000) {
+                _binding.loadButton.press(pressScaleFactor / 10000f, false)
+            }
+            if (pressScaleFactor in 10000..15000) {
+                val isPlaying = mainViewModel.isPlaying.value!!
+                _binding.playButton.press(pressScaleFactor / 10000f, isPlaying)
+            } else {
+                _binding.pauseButton.press(pressScaleFactor / WaveformSlideBar.MAX_VALUE, false)
             }
         }
 
+        // error message observer
+        mainViewModel.errorMessage.observe(this) { errorMessage ->
+            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        }
+
+    }
+
+    private fun queryName(resolver: ContentResolver, uri: Uri): String? {
+        val returnCursor = resolver.query(uri, null, null, null, null)!!
+        val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        returnCursor.moveToFirst()
+        val name = returnCursor.getString(nameIndex)
+        returnCursor.close()
+        return name
     }
 }

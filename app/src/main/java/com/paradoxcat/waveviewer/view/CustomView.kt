@@ -32,12 +32,7 @@ abstract class CustomView(context: Context, attrs: AttributeSet?) : View(context
      * Re-calculates all the necessary values required for drawing.
      * Call this method when any of the view's properties has changed.
      */
-    protected open fun render() {
-        // pre-condition check
-        if (width==0 || height==0) {
-            return
-        }
-    }
+    abstract fun render()
 
     /**
      * Sets certain properties of the view to animate.

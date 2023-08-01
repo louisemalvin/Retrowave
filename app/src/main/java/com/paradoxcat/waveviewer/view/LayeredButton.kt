@@ -10,7 +10,6 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.view.animation.AccelerateInterpolator
 import com.paradoxcat.waveviewer.R
 import kotlin.math.ceil
 
@@ -24,6 +23,9 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
 
     companion object {
         const val TAG = "LayeredButton"
+        const val LEFT_COORDINATE = 0.0f
+        const val TOP_COORDINATE = 0.0f
+        const val ANIMATION_DURATION = 500L // animation duration for full press
         const val DEFAULT_MAX_HEIGHT_DIFFERENCE = 50f // default attribute values
         const val DEFAULT_CORNER_RADIUS = 10f
         const val DEFAULT_LOCKED_HEIGHT_SCALE_FACTOR = 0.5f
@@ -44,7 +46,6 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
     private var currentMaxHeight = DEFAULT_MAX_HEIGHT_DIFFERENCE
     private var currentHeight = DEFAULT_MAX_HEIGHT_DIFFERENCE
     private var icon: Drawable? = null
-    private var isLocked = false
 
     init {
         initTypedArrayOrDefault(attrs)
@@ -90,7 +91,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
     }
 
     override fun onDraw(canvas: Canvas?) {
-        // pre-condition check
+        // pre-condition check::
         if (!this::topRect.isInitialized) {
             return
         }
@@ -113,11 +114,15 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
     }
 
     override fun render() {
-        super.render()
+        // pre-condition check:
+        if (width==0 || height==0) {
+            return
+        }
+
         // calculate the shape of the top and bottom layer
-        topRect = RectF(0f, 0f, width.toFloat(), height.toFloat() - currentHeight)
+        topRect = RectF(LEFT_COORDINATE, TOP_COORDINATE, width.toFloat(), height.toFloat() - currentHeight)
         bottomRect = RectF(
-            0f,
+            LEFT_COORDINATE,
             height.toFloat() - maxHeight - 2 * cornerRadius,
             width.toFloat(),
             height.toFloat()
@@ -129,7 +134,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
 
     override fun setAnimation(animationValue: Float) {
         var newHeight = animationValue
-        // pre-condition checks
+        // pre-condition check:
         // button could not be pushed lower than bottom layer
         if (animationValue < 0) {
             newHeight = 0f
@@ -145,8 +150,8 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
 
         // adjust top layer and icon to the new value
         topRect = RectF(
-            0f,
-            0f + maxHeight - newHeight,
+            LEFT_COORDINATE,
+            TOP_COORDINATE + maxHeight - newHeight,
             width.toFloat(),
             height.toFloat() - newHeight
         )
@@ -167,43 +172,36 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
         return Rect(iconLeft, iconTop, iconRight, iconBottom)
     }
 
-    fun setData(heightDifference: Float) {
-        val scaleFactor = currentMaxHeight - (heightDifference * currentMaxHeight * 2f)
+    /**
+     * Animate soft-press to the button.
+     *
+     * @param pressScaleFactor -- 0.0f - 1.0f, 0.0f is no press, 1.0f is full press
+     * @param isLocked -- true if the button is locked, false otherwise
+     */
+    fun press(pressScaleFactor: Float, isLocked: Boolean) {
+        // set maximum allowed height depending on the lock state
+        currentMaxHeight = if (isLocked) {
+            maxHeight * lockScaleFactor
+        } else {
+            maxHeight
+        }
+        // calculate end height after the press
+        val scaleFactor = currentMaxHeight - (pressScaleFactor * currentMaxHeight)
+        // animate to the new height, duration depends on the press factor
         val animator = getAnimator(currentHeight, scaleFactor, currentMaxHeight)
-        animator.duration = 500
+        animator.duration = (ANIMATION_DURATION * pressScaleFactor).toLong()
         animator.interpolator = AccelerateDecelerateInterpolator()
         animator.start()
     }
 
-    fun setData(lock: Boolean) {
-        if (isLocked) {
-            return
-        }
-        // keeps the button 'pressed' if it is locked
-        if (lock) {
-            isLocked = true
-            currentMaxHeight = maxHeight * lockScaleFactor
-        }
-        val animator = getAnimator(currentHeight, 0f, currentMaxHeight)
-        animator.duration = 400
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.start()
-    }
-
-    fun setData() {
-        // unlock the button
-        if (isLocked) {
-            isLocked = false
-            currentMaxHeight = maxHeight
-            val animator = getAnimator(
-                currentHeight,
-                currentMaxHeight,
-                currentMaxHeight - 10f,
-                currentMaxHeight
-            )
-            animator.duration = 400
-            animator.interpolator = AccelerateInterpolator()
-            animator.start()
-        }
+    /**
+     * Animate full-press to the button.
+     *
+     * Equals to setData(1.0f, isLocked)
+     * @param press -- 0.0f - 1.0f, 0.0f is no press, 1.0f is full press
+     * @param isLocked -- true if the button is locked, false otherwise
+     */
+    fun press(isLocked: Boolean) {
+        press(1.0f, isLocked)
     }
 }

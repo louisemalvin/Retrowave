@@ -70,7 +70,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
          * @return Path object of the waveform samples[startIndex, endIndex]
          */
         fun getPathChunk(points: Array<Point>, startIndex: Int, endIndex: Int): Path {
-            // pre-condition check
+            // pre-condition check:
             if (endIndex - startIndex <= 1 || points.isEmpty() || startIndex < 0
                 || endIndex >= points.size
             ) {
@@ -127,7 +127,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        // pre-condition check
+        // pre-condition check:
         if (!::waveform.isInitialized) {
             return
         }
@@ -136,7 +136,11 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
     }
 
     override fun render() {
-        super.render()
+        // pre-condition check:
+        if (width==0 || height==0) {
+            return
+        }
+
         waveform = Path()
         waveform.moveTo(0F, height / 2.0f)
         waveform.lineTo(width.toFloat(), height / 2.0f)
