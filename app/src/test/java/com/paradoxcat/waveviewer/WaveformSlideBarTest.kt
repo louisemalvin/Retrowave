@@ -1,16 +1,18 @@
 package com.paradoxcat.waveviewer
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.paradoxcat.waveviewer.model.Point
 import com.paradoxcat.waveviewer.view.WaveformSlideBar
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-// TODO: Fix 'posix:permissions' not supported as initial attribute' error //
-@RunWith(AndroidJUnit4::class)
-class WaveformSlideBarInstrumentedTest {
+// TODO: Fix 'posix:permissions' not supported as initial attribute' error
+@Config (manifest=Config.NONE)
+@RunWith(RobolectricTestRunner::class)
+class WaveformSlideBarTest {
 
     companion object {
         const val SAMPLE_WIDTH = 1000
@@ -23,10 +25,10 @@ class WaveformSlideBarInstrumentedTest {
 
     @Before
     fun setUp() {
-        intArray = intArrayOf(0, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000)
+        intArray = intArrayOf(10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000)
     }
 
-    fun init_point_noStep() {
+    private fun init_point_noStep() {
         points = WaveformSlideBar.calculatePoints(intArray, SAMPLE_WIDTH, SAMPLE_HEIGHT, 1)
     }
 
@@ -42,8 +44,6 @@ class WaveformSlideBarInstrumentedTest {
         val pathChunk = WaveformSlideBar.getPathChunk(points, 0, 1)
         assertThat(pathChunk.isEmpty).isFalse()
     }
-
-    // TODO: test size of pathChunk
 
     @Test
     fun getPathChunk_invalid_startIndex_equals_endIndex() {

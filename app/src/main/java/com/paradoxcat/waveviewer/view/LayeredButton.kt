@@ -191,6 +191,11 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
      * @param pressScaleFactor -- 0.0f - 1.0f, 0.0f is no press, 1.0f is full press
      */
     fun press(pressScaleFactor: Float) {
+        // prevents overriding when user is pressing the button
+        if (isPressed) {
+            return
+        }
+
         // set maximum allowed height depending on the lock state
         // calculate end height after the press
         val scaleFactor = currentMaxHeight - (pressScaleFactor * currentMaxHeight)

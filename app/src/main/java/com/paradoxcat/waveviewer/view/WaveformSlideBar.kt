@@ -77,7 +77,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
          */
         fun getPathChunk(points: Array<Point>, startIndex: Int, endIndex: Int): Path {
             // pre-condition check:
-            if (endIndex - startIndex <= 1 || points.isEmpty() || startIndex < 0
+            if (endIndex - startIndex < 1 || points.isEmpty() || startIndex < 0
                 || endIndex >= points.size
             ) {
                 return Path()
