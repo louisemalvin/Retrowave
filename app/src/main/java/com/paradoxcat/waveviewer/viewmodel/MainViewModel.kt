@@ -338,6 +338,7 @@ class MainViewModel @Inject constructor(
         }
         mediaPlayer.seekTo(0)
         update()
+        updateTimestampAndWaveformIndex()
     }
 
     /**

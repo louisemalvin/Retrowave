@@ -110,12 +110,14 @@ class MainActivity : AppCompatActivity() {
     private fun setupStateObserver() {
         mainViewModel.state.observe(this) { state ->
             when (state) {
-                MediaPlayerState.PREPARED, MediaPlayerState.INIT -> {
-                    _binding.playbackIndicatorView.setData(false)
-                    _binding.playButton.press(0.0f, false)
+                MediaPlayerState.PLAYING -> {
+                    _binding.playbackIndicatorView.setData(true)
+                    _binding.playButton.lock(true)
                 }
                 else -> {
-                    // Handle other unused states
+                    _binding.playbackIndicatorView.setData(false)
+                    _binding.playButton.lock(false)
+                    _binding.playButton.press(0.0f)
                 }
             }
         }
@@ -160,15 +162,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             val pressScaleFactor = pressScale * 2.0f
-            val modulo = waveform % 3
 
-            when (modulo) {
-                0 -> _binding.stopButton.press(pressScaleFactor, false)
-                1 -> _binding.playButton.press(
-                    pressScaleFactor,
-                    mainViewModel.state.value == MediaPlayerState.PLAYING
-                )
-                else -> _binding.loadButton.press(pressScaleFactor, false)
+            when (waveform % 3) {
+                0 -> _binding.stopButton.press(pressScaleFactor)
+                1 -> _binding.playButton.press(pressScaleFactor)
+                else -> _binding.loadButton.press(pressScaleFactor)
             }
         }
     }
@@ -200,12 +198,11 @@ class MainActivity : AppCompatActivity() {
      *
      * Long press to load from file, short press to switch to audio from assets.
      * @param getContent -- ActivityResultLauncher for file picker
-     * @param handler -- Handler for long press
      */
     private fun setupLoadButtonListener(getContent: ActivityResultLauncher<String>) {
         var externalRead = false
         // create timer for long press
-        var timer = object : CountDownTimer(EXTERNAL_FILE_TRIGGER, EXTERNAL_FILE_TRIGGER) {
+        val timer = object : CountDownTimer(EXTERNAL_FILE_TRIGGER, EXTERNAL_FILE_TRIGGER) {
             override fun onTick(millisUntilFinished: Long) {
                 // nothing to do
             }
@@ -218,15 +215,23 @@ class MainActivity : AppCompatActivity() {
         _binding.loadButton.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    if (showHint) {
+                        Toast.makeText(
+                            this,
+                            "Long press to load from file",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        showHint = false
+                    }
                     _binding.loadButton.pressHold()
                     timer.start()
                     true
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    timer?.cancel()
+                    timer.cancel()
                     _binding.loadButton.performClick()
-                    _binding.loadButton.pressRelease(isLocked = false)
+                    _binding.loadButton.pressRelease()
                     if (externalRead) {
                         externalRead = false
                     } else {
@@ -256,7 +261,7 @@ class MainActivity : AppCompatActivity() {
                     mainViewModel.togglePlayPause()
                     val isPlaying = mainViewModel.state.value == MediaPlayerState.PLAYING
                     _binding.playbackIndicatorView.setData(isPlaying)
-                    _binding.playButton.pressRelease(isPlaying)
+                    _binding.playButton.pressRelease()
                     _binding.playButton.performClick()
                     true
                 }
@@ -281,7 +286,7 @@ class MainActivity : AppCompatActivity() {
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     mainViewModel.stop()
-                    _binding.stopButton.pressRelease(false)
+                    _binding.stopButton.pressRelease()
                     _binding.stopButton.performClick()
                     true
                 }
