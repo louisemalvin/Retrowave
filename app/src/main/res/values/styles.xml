@@ -42,4 +42,10 @@
         <item name="topLayerColor">@color/yellow</item>
         <item name="bottomLayerColor">@color/dark_yellow</item>
     </style>
+    <style name="layeredButton.landscape">
+        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_height">90dp</item>
+        <item name="heightDifference">20dp</item>
+        <item name="cornerRadius">15dp</item>
+    </style>
 </resources>
