@@ -3,20 +3,22 @@ package com.paradoxcat.waveviewer
 import android.content.ContentResolver
 import android.net.Uri
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.provider.OpenableColumns
 import android.util.Log
+import android.view.MotionEvent
 import android.widget.SeekBar
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.paradoxcat.waveviewer.databinding.ActivityMainBinding
 import com.paradoxcat.waveviewer.util.TimeConverter.getFormattedTime
-import com.paradoxcat.waveviewer.util.TimeConverter.millisecondsToProgress
-import com.paradoxcat.waveviewer.util.TimeConverter.progressToMilliseconds
 import com.paradoxcat.waveviewer.view.WaveformSlideBar
 import com.paradoxcat.waveviewer.viewmodel.MainViewModel
+import com.paradoxcat.waveviewer.viewmodel.MainViewModel.Companion.MediaPlayerState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -27,150 +29,298 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val TAG = "MainActivity"
+        const val OPEN_FILE_ERROR = "Error opening file"
+        const val EXTERNAL_FILE_TRIGGER = 1000L
     }
 
     private lateinit var _binding: ActivityMainBinding
 
     private val mainViewModel: MainViewModel by viewModels()
+    private var showHint = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(_binding.root)
 
+        // set up file picker
         val getContent =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-                if (uri==null) {
-                    return@registerForActivityResult
-                }
-                try {
-                    val fileName = queryName(this.contentResolver, uri)
-                    val assetFileDescriptor = this.contentResolver.openAssetFileDescriptor(uri, "r")
-                    if (assetFileDescriptor==null && fileName==null) {
-                        return@registerForActivityResult
+                uri?.let { selectedUri ->
+                    try {
+                        val fileName = getFileName(contentResolver, selectedUri)
+                        val assetFileDescriptor =
+                            contentResolver.openAssetFileDescriptor(selectedUri, "r")
+                        if (assetFileDescriptor!=null && fileName!=null) {
+                            mainViewModel.setMedia(assetFileDescriptor, fileName)
+                            assetFileDescriptor.close()
+                        } else {
+                            throw Exception(OPEN_FILE_ERROR)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, OPEN_FILE_ERROR, e)
+                        Toast.makeText(this, OPEN_FILE_ERROR, Toast.LENGTH_SHORT).show()
                     }
-                    mainViewModel.setMedia(assetFileDescriptor!!, fileName!!)
-                    assetFileDescriptor.close()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error loading file", e)
-                    Toast.makeText(this, "Error loading file", Toast.LENGTH_SHORT).show()
                 }
-
             }
 
-        /* Listeners */
+        // set up listeners
+        setupListeners(getContent)
 
-        // load button listener
-        _binding.loadButton.setOnClickListener {
-            mainViewModel.setMedia()
-            _binding.loadButton.press(false)
-//            getContent.launch("audio/wav")
-        }
+        // set up observers
+        setupObservers()
 
-        // play button listener
-        _binding.playButton.setOnClickListener {
-            mainViewModel.togglePlayPause()
-            // get lock state, if media is playing, keep the button pressed
-            val currentPlayState = mainViewModel.isPlaying.value!!
-            // animate button press
-            _binding.playButton.press(currentPlayState)
-        }
+    }
 
-        // stop button listener
-        _binding.stopButton.setOnClickListener {
-            mainViewModel.stop()
-            // animate button press
-            _binding.stopButton.press(false)
-        }
+    /**
+     * Set up observers for LiveData from MainViewModel.
+     */
+    private fun setupObservers() {
+        setupTitleObserver()
+        setupDurationObserver()
+        setupStateObserver()
+        setupTimestampObserver()
+        setupWaveformDataObserver()
+        setupCurrentWaveformObserver()
+        setupErrorMessageObserver()
+    }
 
-        // Seekbar listener
-        _binding.playbackSeekBar.setOnSeekBarChangeListener(
-            object :
-                SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                    // pre-condition check
-                    // only update if seekbar is changed by user
-                    if (!fromUser) {
-                        return
-                    }
-
-                    val totalDuration = mainViewModel.duration.value!!
-                    // update the media player
-                    mainViewModel.seekTo(progressToMilliseconds(totalDuration, progress))
-                }
-
-                override fun onStartTrackingTouch(seekBar: SeekBar) {
-                    // nothing to track currently
-                }
-
-                override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    // nothing to track currently
-                }
-            })
-
-        /* Observers */
-
-        // title name observer
+    /**
+     * Update UI with audio file name.
+     */
+    private fun setupTitleObserver() {
         mainViewModel.title.observe(this) { title ->
             _binding.titleTextView.text = title
         }
+    }
 
-        // total audio duration observer
+    /**
+     * Update UI and seekbar max value with total audio duration.
+     */
+    private fun setupDurationObserver() {
         mainViewModel.duration.observe(this) { duration ->
             _binding.durationTextView.text = getFormattedTime(duration)
+            _binding.playbackSeekBar.max = duration?.toInt() ?: 1
         }
+    }
 
-        // audio playback state observer
-        mainViewModel.isPlaying.observe(this) { isPlaying ->
-            // update playback indicator & play button lock state
-            _binding.playbackIndicatorView.setData(isPlaying)
-            _binding.playButton.press(0.0f, isPlaying)
+    /**
+     * Update play button and indicator with current media player state.
+     */
+    private fun setupStateObserver() {
+        mainViewModel.state.observe(this) { state ->
+            when (state) {
+                MediaPlayerState.PREPARED, MediaPlayerState.INIT -> {
+                    _binding.playbackIndicatorView.setData(false)
+                    _binding.playButton.press(0.0f, false)
+                }
+                else -> {
+                    // Handle other unused states
+                }
+            }
         }
+    }
 
-        // timestamp observer
+    /**
+     * Update timestamp and seekbar with current media player position.
+     */
+    private fun setupTimestampObserver() {
         mainViewModel.timestamp.observe(this) { timestamp ->
-            // update timestamp & seekbar progress
             _binding.timestampTextView.text = getFormattedTime(timestamp)
-            val duration = mainViewModel.duration.value
-            _binding.playbackSeekBar.progress = millisecondsToProgress(timestamp, duration!!)
+            _binding.playbackSeekBar.progress = timestamp?.toInt() ?: 0
         }
+    }
 
-        lifecycleScope.launch {
-            // waveform data observer
-            mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
+    /**
+     * Update waveform slide bar with current waveform data.
+     */
+    private fun setupWaveformDataObserver() {
+        mainViewModel.waveformData.observe(this@MainActivity) { waveformData ->
+            lifecycleScope.launch {
                 _binding.waveformView.setData(waveformData)
             }
         }
+    }
 
-
-        // current waveform index observer
+    /**
+     * Manipulate buttons height with current waveform data.
+     */
+    private fun setupCurrentWaveformObserver() {
         mainViewModel.currentWaveform.observe(this) { currentWaveform ->
-            // pre-condition check
             if (currentWaveform >= mainViewModel.waveformData.value!!.size) {
                 return@observe
             }
 
             val waveform = mainViewModel.waveformData.value!![currentWaveform]
-            val pressScaleFactor = abs(waveform)
-            if (pressScaleFactor in 5000..10000) {
-                _binding.loadButton.press(pressScaleFactor / 10000f, false)
+            val pressScale = abs(waveform) / WaveformSlideBar.MAX_VALUE
+
+            // Check pressScale condition before performing actions
+            if (pressScale < 0.1f) {
+                return@observe
             }
-            if (pressScaleFactor in 10000..15000) {
-                val isPlaying = mainViewModel.isPlaying.value!!
-                _binding.playButton.press(pressScaleFactor / 10000f, isPlaying)
-            } else {
-                _binding.stopButton.press(pressScaleFactor / WaveformSlideBar.MAX_VALUE, false)
+
+            val pressScaleFactor = pressScale * 2.0f
+            val modulo = waveform % 3
+
+            when (modulo) {
+                0 -> _binding.stopButton.press(pressScaleFactor, false)
+                1 -> _binding.playButton.press(
+                    pressScaleFactor,
+                    mainViewModel.state.value == MediaPlayerState.PLAYING
+                )
+                else -> _binding.loadButton.press(pressScaleFactor, false)
             }
         }
-
-        // error message observer
-        mainViewModel.errorMessage.observe(this) { errorMessage ->
-            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
-        }
-
     }
 
-    private fun queryName(resolver: ContentResolver, uri: Uri): String? {
+    /**
+     * Show error message if any.
+     */
+    private fun setupErrorMessageObserver() {
+        mainViewModel.errorMessage.observe(this) { errorMessage ->
+            if (errorMessage.isNotEmpty()) {
+                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    /**
+     * Set up event listeners for MainActivity.
+     * @param getContent -- ActivityResultLauncher for file picker
+     */
+    private fun setupListeners(getContent: ActivityResultLauncher<String>) {
+        setupLoadButtonListener(getContent)
+        setupPlayButtonListener()
+        setupStopButtonListener()
+        setupSeekBarListener()
+    }
+
+    /**
+     * Load button listener.
+     *
+     * Long press to load from file, short press to switch to audio from assets.
+     * @param getContent -- ActivityResultLauncher for file picker
+     * @param handler -- Handler for long press
+     */
+    private fun setupLoadButtonListener(getContent: ActivityResultLauncher<String>) {
+        var externalRead = false
+        // create timer for long press
+        var timer = object : CountDownTimer(EXTERNAL_FILE_TRIGGER, EXTERNAL_FILE_TRIGGER) {
+            override fun onTick(millisUntilFinished: Long) {
+                // nothing to do
+            }
+            override fun onFinish() {
+                getContent.launch("audio/*")
+                externalRead = true
+            }
+        }
+
+        _binding.loadButton.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    _binding.loadButton.pressHold()
+                    timer.start()
+                    true
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    timer?.cancel()
+                    _binding.loadButton.performClick()
+                    _binding.loadButton.pressRelease(isLocked = false)
+                    if (externalRead) {
+                        externalRead = false
+                    } else {
+                        mainViewModel.setMedia()
+                    }
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    /**
+     * Play button listener.
+     *
+     * Any press toggle play/pause depending on current media player state.
+     */
+    private fun setupPlayButtonListener() {
+        _binding.playButton.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    _binding.playButton.pressHold()
+                    true
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    mainViewModel.togglePlayPause()
+                    val isPlaying = mainViewModel.state.value == MediaPlayerState.PLAYING
+                    _binding.playbackIndicatorView.setData(isPlaying)
+                    _binding.playButton.pressRelease(isPlaying)
+                    _binding.playButton.performClick()
+                    true
+                }
+
+                else -> false
+            }
+        }
+    }
+
+    /**
+     * Stop button listener.
+     *
+     * Reset timestamp to 0 and pause media player.
+     */
+    private fun setupStopButtonListener() {
+        _binding.stopButton.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    _binding.stopButton.pressHold()
+                    true
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    mainViewModel.stop()
+                    _binding.stopButton.pressRelease(false)
+                    _binding.stopButton.performClick()
+                    true
+                }
+
+                else -> false
+            }
+        }
+    }
+
+    /**
+     * Seek bar listener.
+     *
+     * Call seek to function when user move the seek bar.
+     */
+    private fun setupSeekBarListener() {
+        _binding.playbackSeekBar.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (!fromUser) {
+                        return
+                    }
+                    mainViewModel.seekTo(progress.toLong())
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar) {
+                    // Nothing to track currently
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    // Nothing to track currently
+                }
+            }
+        )
+    }
+
+    /**
+     * Helper function to get file name from uri
+     */
+    private fun getFileName(resolver: ContentResolver, uri: Uri): String? {
         val returnCursor = resolver.query(uri, null, null, null, null)!!
         val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
         returnCursor.moveToFirst()

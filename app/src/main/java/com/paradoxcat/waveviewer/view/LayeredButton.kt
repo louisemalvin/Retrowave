@@ -10,6 +10,7 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import com.paradoxcat.waveviewer.R
 import kotlin.math.ceil
 
@@ -160,6 +161,11 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
         invalidate()
     }
 
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
+    }
+
     private fun createIconBounds(topRect: RectF, icon: Drawable): Rect {
         // calculate icon sizes
         val iconWidth = icon.intrinsicWidth
@@ -186,7 +192,7 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
             maxHeight
         }
         // calculate end height after the press
-        val scaleFactor = currentHeight - (pressScaleFactor * currentMaxHeight)
+        val scaleFactor = currentMaxHeight - (pressScaleFactor * currentMaxHeight)
         // animate to the new height, duration depends on the press factor
         val animator = getAnimator(currentHeight, scaleFactor, currentMaxHeight)
         animator.duration = ANIMATION_DURATION
@@ -201,7 +207,31 @@ class LayeredButton(context: Context, attrs: AttributeSet?) : CustomView(context
      * @param press -- 0.0f - 1.0f, 0.0f is no press, 1.0f is full press
      * @param isLocked -- true if the button is locked, false otherwise
      */
-    fun press(isLocked: Boolean) {
-        press(1.0f, isLocked)
+    fun pressHold() {
+        isPressed = true
+        val animator = getAnimator(currentHeight, 0f)
+        animator.duration = ANIMATION_DURATION / 2
+        animator.interpolator = DecelerateInterpolator()
+        animator.start()
+    }
+
+    /**
+     * Animate release-press to the button.
+     *
+     * Call this after pressHold() to animate button release.
+     * @param press -- 0.0f - 1.0f, 0.0f is no press, 1.0f is full press
+     * @param isLocked -- true if the button is locked, false otherwise
+     */
+    fun pressRelease(isLocked: Boolean) {
+        isPressed = false
+        currentMaxHeight = if (isLocked) {
+            maxHeight * lockScaleFactor
+        } else {
+            maxHeight
+        }
+        val animator = getAnimator(currentHeight, currentMaxHeight)
+        animator.duration = ANIMATION_DURATION
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.start()
     }
 }

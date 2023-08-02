@@ -9,6 +9,7 @@ import android.graphics.Path
 import android.util.AttributeSet
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.paradoxcat.waveviewer.model.Point
+import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.pow
 
@@ -25,8 +26,8 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
         private const val LEFT_RIGHT_PADDING = 45.0f
         private const val TOP_BOTTOM_PADDING = 50.0f
         const val LINE_WIDTH = 1.0f // thickness of the waveform line
-        const val DEFAULT_STEP_COUNT = 1 // how many samples to skip when drawing the waveform
-        const val DEFAULT_MAX_LINES = 5000 // how many lines to draw
+        const val DEFAULT_MAX_LINES = 5000 // how many lines to draw at most
+        const val DEFAULT_SAMPLE_NOISES = 500 // Filter threshold for low amplitude samples
         const val ANIMATION_DURATION = 1000L // duration of the drawing in milliseconds
         const val ANIMATION_START_PERCENTAGE = 0.0f
         const val ANIMATION_END_PERCENTAGE = 1.0f
@@ -54,6 +55,10 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
 
             // calculate points for drawLines()
             for (i in waveform.indices step stepCount) {
+                // filter out noise samples
+                if (abs(waveform[i]) <= DEFAULT_SAMPLE_NOISES) {
+                    continue
+                }
                 // TODO: fine-tune y-values with skipped samples
                 val x = LEFT_RIGHT_PADDING + i * sampleDistance
                 val y = (height / 2.0f - waveform[i] * amplitudeScaleFactor)
@@ -107,7 +112,7 @@ class WaveformSlideBar(context: Context, attrs: AttributeSet) : CustomView(conte
     private val linePaint = Paint()
 
     private var indexOfDrawnPoints: Int = 0
-    private var stepCount = DEFAULT_STEP_COUNT
+    private var stepCount = 1
 
     init {
         initLinePaint()

@@ -45,7 +45,7 @@ class MainViewModelInstrumentedTest {
         )
         assertThat(mainViewModel.duration.value).isEqualTo(EXAMPLE_AUDIO_LENGTH_SMALL)
         assertThat(mainViewModel.title.value).isEqualTo(EXAMPLE_AUDIO_FILE_NAME_SMALL)
-        assertThat(mainViewModel.isPlaying.value).isEqualTo(false)
+        assertThat(mainViewModel.state.value).isEqualTo(false)
         assertThat(mainViewModel.timestamp.value).isEqualTo(0)
         assertThat(mainViewModel.waveformData.value).isNotNull()
     }

@@ -26,6 +26,7 @@ class MainViewModel @Inject constructor(
     companion object {
         const val TAG = "MainViewModel"
         const val REFRESH_RATE = 17L
+
         // A real gravitational wave from https://www.gw-openscience.org/audio/
         // It was a GW150914 binary black hole merger event that LIGO has detected,
         // waveform template derived from GR, whitened, frequency shifted +400 Hz
@@ -35,22 +36,26 @@ class MainViewModel @Inject constructor(
         const val EXPECTED_NUM_CHANNELS = 1
         const val EXPECTED_SAMPLE_RATE = 44100
         const val EXPECTED_AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
+        const val DEFAULT_TOAST_ERROR_MESSAGE = "Preparing media player..."
+        enum class MediaPlayerState {
+            INIT, PREPARED, PLAYING
+        }
     }
 
-    private val _waveformData = MutableLiveData<IntArray>()
-    private val _currentWaveformIndex = MutableLiveData<Int>()
-    private val _title = MutableLiveData<String>()
-    private val _isPlaying = MutableLiveData<Boolean>()
-    private val _timestamp = MutableLiveData<Long>()
-    private val _duration = MutableLiveData<Long>()
-    private val _errorMessage = MutableLiveData<String>()
+    private val _waveformData = MutableLiveData(intArrayOf())
+    private val _currentWaveformIndex = MutableLiveData(0)
+    private val _title = MutableLiveData("")
+    private val _state = MutableLiveData(MediaPlayerState.INIT)
+    private val _timestamp = MutableLiveData(0L)
+    private val _duration = MutableLiveData(0L)
+    private val _errorMessage = MutableLiveData("")
 
     private var currentMedia = 0
 
     val waveformData: LiveData<IntArray> get() = _waveformData
     val currentWaveform: LiveData<Int> get() = _currentWaveformIndex
     val title: LiveData<String> get() = _title
-    val isPlaying: LiveData<Boolean> get() = _isPlaying
+    val state: LiveData<MediaPlayerState> get() = _state
     val timestamp: LiveData<Long> get() = _timestamp
     val duration: LiveData<Long> get() = _duration
     val errorMessage: LiveData<String> get() = _errorMessage
@@ -159,6 +164,55 @@ class MainViewModel @Inject constructor(
     }
 
     /**
+     * Resets media player and metadata.
+     */
+    private fun reset() {
+        mediaPlayer.reset()
+        _waveformData.value = intArrayOf()
+        _currentWaveformIndex.value = 0
+        _title.value = ""
+        _state.value = MediaPlayerState.INIT
+        _timestamp.value = 0L
+        _duration.value = 0L
+    }
+
+    /**
+     * Returns true if media player is playing, false otherwise.
+     */
+    private fun update() {
+        try {
+            if (mediaPlayer.isPlaying) {
+                _state.value = MediaPlayerState.PLAYING
+                return
+            } else {
+                _state.value = MediaPlayerState.PREPARED
+            }
+        } catch (e: Exception) {
+            _state.value = MediaPlayerState.INIT
+            Log.e(TAG, "Media player error: ${e.message}")
+            _errorMessage.value = e.message
+        }
+    }
+
+    /**
+     * Updates timestamp and waveform index while playing.
+     *
+     * This function refresh rate depends on REFRESH_RATE constant.
+     */
+    private fun updatePlayLoop() {
+        update()
+        viewModelScope.launch {
+            while (_state.value==MediaPlayerState.PLAYING) {
+                updateTimestampAndWaveformIndex()
+                delay(REFRESH_RATE)
+                update()
+            }
+            updateTimestampAndWaveformIndex()
+            Log.i(TAG, "Stopped updating timestamp and waveform index")
+        }
+    }
+
+    /**
      * Updates timestamp and waveform index.
      *
      * Call this function whenever the timestamp changes.
@@ -179,43 +233,14 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * Resets media player and metadata.
-     */
-    private fun reset() {
-        mediaPlayer.reset()
-        _waveformData.value = intArrayOf()
-        _currentWaveformIndex.value = 0
-        _title.value = ""
-        _isPlaying.value = false
-        _timestamp.value = 0L
-        _duration.value = 0L
-    }
-
-    /**
-     * Updates timestamp and waveform index while playing.
-     *
-     * This function refresh rate depends on REFRESH_RATE constant.
-     */
-    private fun updatePlayLoop() {
-        viewModelScope.launch {
-            while (mediaPlayer.isPlaying) {
-                updateTimestampAndWaveformIndex()
-                delay(REFRESH_RATE)
-            }
-            _isPlaying.value = mediaPlayer.isPlaying
-            updateTimestampAndWaveformIndex()
-        }
-    }
-
-    /**
      * Sets audio to play using default audio file in assets.
      */
     private fun setMedia(title: String) {
         // pre-condition check:
         // make sure media player is on idle state
         reset()
-
         try {
+            Log.d(TAG, "Trying to load media: $title")
             // load file from assets to prepare media player and waveform data
             val assetFileDescriptor = assetManager.openFd(title)
             mediaPlayer.setDataSource(assetFileDescriptor)
@@ -228,6 +253,8 @@ class MainViewModel @Inject constructor(
             _title.value = title
             _timestamp.value = mediaPlayer.currentPosition.toLong()
             _duration.value = mediaPlayer.duration.toLong()
+            update()
+            Log.d(TAG, "State after loading file: ${_state.value}")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set media: ${e.message}")
             _errorMessage.value = e.message
@@ -256,6 +283,7 @@ class MainViewModel @Inject constructor(
 
         try {
             // load file from assets to prepare media player and waveform data
+            Log.d(TAG, "Trying to load external media: $title")
             mediaPlayer.setDataSource(assetFileDescriptor)
             extractRawData(assetFileDescriptor)
             // asset no longer needed, close it
@@ -265,6 +293,8 @@ class MainViewModel @Inject constructor(
             _title.value = title
             _timestamp.value = mediaPlayer.currentPosition.toLong()
             _duration.value = mediaPlayer.duration.toLong()
+            update()
+            Log.d(TAG, "State after loading external file: ${_state.value}")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set media: ${e.message}")
             _errorMessage.value = e.message
@@ -275,31 +305,56 @@ class MainViewModel @Inject constructor(
      * Sets media player to play or pause state.
      */
     fun togglePlayPause() {
-        if (!mediaPlayer.isPlaying) {
-            mediaPlayer.start()
-            _isPlaying.value = mediaPlayer.isPlaying
-            updatePlayLoop()
+        // pre-condition check:
+        update()
+        if (_state.value==MediaPlayerState.INIT) {
+            Log.e(TAG, "Media player is not ready")
+            _errorMessage.value = DEFAULT_TOAST_ERROR_MESSAGE
             return
         }
-        mediaPlayer.pause()
-        _isPlaying.value = mediaPlayer.isPlaying
+        if (_state.value==MediaPlayerState.PLAYING) {
+            // pause and update state
+            mediaPlayer.pause()
+            return
+        }
+        if (_state.value==MediaPlayerState.PREPARED) {
+            // start and call loop to update timestamp & waveform index
+            mediaPlayer.start()
+            updatePlayLoop()
+        }
     }
 
     /**
      * Sets media player to pause state if it is playing.
      */
     fun stop() {
-        mediaPlayer.pause()
-        seekTo(0L)
-        _isPlaying.value = mediaPlayer.isPlaying
-
+        if (_state.value==MediaPlayerState.INIT) {
+            Log.e(TAG, "Media player is not initialized")
+            _errorMessage.value = DEFAULT_TOAST_ERROR_MESSAGE
+            return
+        }
+        if (_state.value==MediaPlayerState.PLAYING) {
+            mediaPlayer.pause()
+        }
+        mediaPlayer.seekTo(0)
+        update()
     }
 
     /**
      * Sets media player to certain timestamp.
      */
     fun seekTo(milliseconds: Long) {
+        // pre-condition check:
+        // return if media player is not ready
+        if (_state.value==MediaPlayerState.INIT) {
+            Log.e(TAG, "Media player is not ready")
+            _errorMessage.value = DEFAULT_TOAST_ERROR_MESSAGE
+            return
+        }
+
+        Log.i(TAG, "try seek to $milliseconds")
         mediaPlayer.seekTo(milliseconds.toInt())
+        Log.i(TAG, "result: ${mediaPlayer.currentPosition}")
         updateTimestampAndWaveformIndex()
     }
 }
