@@ -1,4 +1,4 @@
-package com.paradoxcat.waveformtest.viewmodel
+package com.paradoxcat.waveviewer
 
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
@@ -22,7 +22,7 @@ class MainViewModelInstrumentedTest {
         const val EXAMPLE_AUDIO_FILE_NAME_WILDCARD = "random_file.wav"
         const val EXAMPLE_AUDIO_FILE_NAME_WRONG_FILETYPE = "wrong_format.mp3"
         const val EXAMPLE_AUDIO_LENGTH_SMALL = 792
-        const val EXAMPLE_AUDIO_WILDCAD_LENGTH = 201348
+        const val EXAMPLE_AUDIO_WILDCARD_LENGTH = 201348
     }
 
     private lateinit var mainViewModel: MainViewModel
@@ -33,7 +33,7 @@ class MainViewModelInstrumentedTest {
 
     @Before
     fun setUp() {
-        mainViewModel = MainViewModel()
+        mainViewModel = MainViewModel(
         context = ApplicationProvider.getApplicationContext()
     }
 
@@ -56,7 +56,7 @@ class MainViewModelInstrumentedTest {
             context.assets.openFd(EXAMPLE_AUDIO_FILE_NAME_WILDCARD),
             EXAMPLE_AUDIO_FILE_NAME_WILDCARD
         )
-        assertThat(mainViewModel.duration.value).isEqualTo(EXAMPLE_AUDIO_WILDCAD_LENGTH)
+        assertThat(mainViewModel.duration.value).isEqualTo(EXAMPLE_AUDIO_WILDCARD_LENGTH)
 
     }
 
