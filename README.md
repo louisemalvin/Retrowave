@@ -1,2 +1,2 @@
-# Retrowave - A Retro-Themed WAV Player
+# Retrowave - A Retro-Themed Audio Player
  ___A simple WAV audio player.___
